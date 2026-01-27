@@ -1,0 +1,22 @@
+experiment_name: "POCD_Kansformer_v1"
+
+paths:
+  save_dir: "./checkpoints"
+
+data:
+  sequence_length: 1000   # L
+  epigenetic_bins: 50     # 2.5Mbp window / 500bp binning = ~5000 bins usually, scaled down for demo
+  n_epigenetic_features: 8
+  kmer_size: 3
+  batch_size: 32
+
+model:
+  hidden_dim: 256
+  num_heads: 8
+  num_layers: 4           # Transformer depth
+  dropout: 0.1
+
+training:
+  lr: 0.001
+  epochs: 20
+  lambda_dist: 0.5        # Weight for regression loss (Sec 3.2.3)
