@@ -17,7 +17,9 @@ def plot_cam(sequence, scores, save_path):
     # Normalize
     scores = (scores - scores.min()) / (scores.max() - scores.min() + 1e-8)
     plt.figure(figsize=(15, 3))
-    plt.bar(range(len(sequence)), scores, color='red', alpha=0.6)
-    plt.title(f"CAM Feature Importance (Seq Len: {len(sequence)})")
+    plt.bar(range(len(scores)), scores, color='red', alpha=0.6)
+    plt.xlabel('Position (pooled)')
+    plt.ylabel('Importance')
+    plt.title(f"CAM Feature Importance (Seq Len: {len(sequence)}, CAM Res: {len(scores)})")
     plt.savefig(save_path)
     plt.close()

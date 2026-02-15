@@ -6,3 +6,6 @@ pyyaml>=6.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 tqdm
+gdown
+pyBigWig
+pysam

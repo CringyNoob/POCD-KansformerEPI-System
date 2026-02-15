@@ -1,22 +1,63 @@
-experiment_name: "POCD_Kansformer_v1"
+experiment_name: "POCD_Kansformer_v6"
 
 paths:
   save_dir: "./checkpoints"
+  bengi_dir: "./data/BENGI"
+  feats_config: "./data/genomic_data/CTCF_DNase_6histone_local.500.json"
+  ref_genome: "/home/jupyter/POCD-KansformerEPI/data/reference/hg19.fa"
 
 data:
-  sequence_length: 1000   # L
-  epigenetic_bins: 50     # 2.5Mbp window / 500bp binning = ~5000 bins usually, scaled down for demo
-  n_epigenetic_features: 8
+  sequence_length: 6000   # 3000bp enhancer + 3000bp promoter concatenated
+  epigenetic_bins: 5000   # 2.5Mbp window / 500bp = 5000 bins
+  n_epigenetic_features: 9  # 1 pos_enc + CTCF + DNase + 6 histone marks
   kmer_size: 3
-  batch_size: 32
+  batch_size: 64            # Reduced from 128 — 628 tokens through KAN OOMs on L4 at 128
+  bin_size: 500
+  seq_len_bp: 2500000
+  enhancer_window: 3000
+  promoter_window: 3000
+  encoder_fit_samples: 5000
+  feats_order:
+    - "CTCF"
+    - "DNase"
+    - "H3K27ac"
+    - "H3K27me3"
+    - "H3K36me3"
+    - "H3K4me1"
+    - "H3K4me3"
+    - "H3K9me3"
 
 model:
-  hidden_dim: 256
-  num_heads: 8
-  num_layers: 4           # Transformer depth
-  dropout: 0.1
+  hidden_dim: 180          # Match reference KansformerEPI
+  num_heads: 6             # 180/6 = 30 per head
+  num_layers: 3            # Match reference depth=3
+  n_tokens: 128            # Sequence branch tokens (epi uses MaxPool1d(10)→500)
+  dropout: 0.1             # Match reference
+  head_dropout: 0.2        # FC head dropout
+  kan_hidden: 64           # KAN FFN hidden dim [180, 64, 180]
+  sa_da: 64
+  sa_r: 32
+  att_penalty: 0.1
 
 training:
-  lr: 0.001
-  epochs: 20
-  lambda_dist: 0.5        # Weight for regression loss (Sec 3.2.3)
+  lr: 0.0001               # 1e-4 (matches reference)
+  epochs: 300              # Match reference (was 100)
+  lambda_dist: 0.1
+  grad_clip: 1.0
+  patience: 10             # Match reference patience=10
+  num_workers: 8
+  weight_decay: 0          # Match reference (was 1e-8)
+  use_cosine_scheduler: false  # Disabled — reference default (was true)
+  att_penalty_coeff: 0.1
+  valid_chroms:
+    - "chr11"
+    - "chr17"
+  test_chroms:
+    - "chr1"
+    - "chr2"
+
+augmentation:
+  enabled: true
+  rc_prob: 0.5
+  epi_noise_std: 0.05
+  shift_max_bins: 3

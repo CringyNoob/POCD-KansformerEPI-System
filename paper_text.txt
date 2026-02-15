@@ -1,0 +1,1209 @@
+--- PAGE 1 ---
+Enhancing Enhancer-Promoter
+Interaction Prediction via GeneRegulatory Inference and Hybrid
+Deep Learning Architectures
+By
+Md Ahbab Hamid Khan ΓÇö 0112230869
+Ahnaf Atique ΓÇö 0112230597
+Shadhin Nandi ΓÇö 0112230604
+Akib Bari ΓÇö 0112231020
+Jamiul Hasan ΓÇö 0112230871
+Md Wali Ullah Khan ΓÇö 0112230754
+Submitted in partial fulfilment of the requirements
+of the degree of Bachelor of Science in Computer Science and Engineering
+February 15, 2026
+Department of Computer Science and Engineering
+United International University
+--- PAGE 2 ---
+Abstract
+Enhancer-promoter interactions (EPI) control gene regulations through the distal communi-
+cation with the target promoters, enabling it through chromatin looping. Understanding the EPI
+prediction correctly is highly important for learning and understanding the disease mechanisms,
+and to infer how they work with certain Non coding DNA segments. However Current methods
+face 3 limitations, namely the relational gap between the advanced position-aware sequence
+encoding and simplistic input representation in on going inference pipelines, not enough fusion
+of sequential, (both positive and negative) and epigenic features, and limited capabilities of
+interaction models to infer properly within time or computational efficiency.
+We propose a Hybrid model consisting of POCD-KansformerEPI, a deep learning framework
+that combines Position Specific Nucleotide Density-based encoding (POCD-ND) with a hybrid
+Kansformer architecture for better EPI Predictions. We employ POCD-ND encoding instead
+of usual sparse One hot Encoding and motif clustering pattern through Convolutional Neural
+Netowrks(CNNs), making sure that we ignore the spacial and mechanistic feature collection loss
+for K-mer(2ΓëñkΓëñ5) counting. The processed data gets sequential contents by bidirectional Long
+Short Term Memory(LSTM) and pipelined through the Kolmogorov-Arnold Networks of The
+Kansfromer with parameterized activations functions to model complex non-Linear regulatory
+relations. The Semi-Multimodal learning concurrently enhances the interaction classification
+and also learns better distant gene classification and EPI is optimised through distant proximal
+policies. Meanwhile Class Activation Maps provide interpretability by analysing predictive
+sequence features.
+The framework is tested and analysed across multiple cell lines (GM12878, HeLa-S3, HMEC,
+IMR90, K562, NHEK) using distance-matched negative sampling to prevent spurious biases. Our
+model is expected to achieve superior cross-cell-line generalization while revealing biologically
+precious EPI regulation patterns, enabling close testable hypotheses about disease-associated
+non-coding variants.
+i
+--- PAGE 3 ---
+Acknowledgements
+This work would have not been possible without the input and support of many people over
+the last two trimesters. We would like to express my gratitude to everyone who contributed to it
+in some way or other.
+First, we would like to thank my academic advisors, ...
+Our sincere gratitude goes to ...
+We are also thankful to ...
+Last but not the least, We owe to our family including our parents for their unconditional
+love and immense emotional support.
+ii
+--- PAGE 4 ---
+Publication List
+[Optional] The main contributions of this research are either published or accepted or in
+preparation in journals and conferences as mentioned in the following list:
+Journal Articles
+1.
+Conference Papers
+1.
+Additional Publications
+Following is the list of relevant publications published in the course of the research that is not
+included in the thesis:
+1.
+iii
+--- PAGE 5 ---
+Table of Contents
+Table of Contents vi
+List of Figures vii
+List of Tables viii
+1 Introduction 1
+1.1 Project Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1
+1.2 Motivation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+1.2.1 The Representation Bottleneck: Beyond Linear Sequences . . . . . . . . . 2
+1.2.2 Modelling Nonlinearity in Gene Regulation . . . . . . . . . . . . . . . . . 2
+1.2.3 Capturing Long-Range Dependencies via Attention . . . . . . . . . . . . . 2
+1.2.4 The Interpretability Imperative . . . . . . . . . . . . . . . . . . . . . . . . 3
+1.3 Objectives . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+1.4 Methodology . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+1.4.1 Phase 1: Data Acquisition, Curation, and Preprocessing . . . . . . . . . . 4
+1.4.2 Phase 2: Advanced Enhancer Encoding via POCD-ND . . . . . . . . . . . 4
+1.4.3 Phase 3: Hybrid Feature Integration via Kansformer Architecture . . . . 4
+1.4.4 Phase 4: Prediction with Multi-Task Learning . . . . . . . . . . . . . . . 5
+1.4.5 Phase 5: Interpretability, Optimisation, and Validation . . . . . . . . . . 5
+1.5 Project Outcome . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.6 Organization of the Report . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+2 Background 7
+2.1 Preliminaries . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2.1.1 The Regulatory Landscape: Enhancers and Promoters . . . . . . . . . . . 7
+2.1.2 Chromatin Looping and the 3D Genome . . . . . . . . . . . . . . . . . . . 8
+2.1.3 Data Modalities and Experimental Assays . . . . . . . . . . . . . . . . . . 8
+2.2 Literature Review . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+2.2.1 The Evolution of Enhancer Identification . . . . . . . . . . . . . . . . . . 9
+2.2.2 Evolution of EnhancerΓÇôPromoter Interaction Prediction . . . . . . . . . . 10
+2.2.3 The Interpretability and Feature Reduction Frontier . . . . . . . . . . . . 11
+2.2.4 Related Research and Similar Applications . . . . . . . . . . . . . . . . . 12
+2.3 Gap Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+iv
+--- PAGE 6 ---
+Table of Contents Table of Contents
+2.3.1 Synthesis and Gap Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+2.3.2 Fundamental Gaps . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+2.3.3 Comparative Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+2.4 Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+3 Project Design 15
+3.1 Requirement Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+3.1.1 Functional and Nonfunctional Requirements . . . . . . . . . . . . . . . . . 15
+3.1.2 Context Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+3.1.3 Data Flow Diagram Level 1 . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+3.1.4 UI Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+3.2 Detailed Methodology and Design . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+3.2.1 Data Acquisition and Preprocessing . . . . . . . . . . . . . . . . . . . . . 16
+3.2.2 POCD-ND Encoding . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.2.3 Neural Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.2.4 Interpretability Modules . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.3 Project Plan . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.4 Task Allocation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+3.5 Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+4 Implementation and Results 20
+4.1 Environment Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+4.2 Testing and Evaluation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+4.3 Results and Discussion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+4.4 Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+5 Standards and Design Constraints 21
+5.1 Compliance with the Standards . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+5.1.1 Software Standards . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+5.1.2 Hardware Standards . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+5.1.3 Communication Standards . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2 Design Constraints . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2.1 Economic Constraint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2.2 Environmental Constraint . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2.3 Ethical Constraint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2.4 Health and Safety Constraint . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2.5 Social Constraint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2.6 Political Constraint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.2.7 Sustainability . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.3 Cost Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5.4 Complex Engineering Problem . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+5.4.1 Complex Problem Solving . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+5.4.2 Engineering Activities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+v
+--- PAGE 7 ---
+Table of Contents Table of Contents
+5.5 Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+6 Conclusion 29
+6.1 Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+6.2 Limitation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+6.3 Future Work . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+vi
+--- PAGE 8 ---
+List of Figures
+vii
+--- PAGE 9 ---
+List of Tables
+2.1 Unified comparison of existing approaches, identified gaps, and the proposed
+POCD-KansformerEPI . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+5.1 Mapping with complex problem solving. . . . . . . . . . . . . . . . . . . . . . . . 25
+5.2 Mapping using complex engineering activities and other. . . . . . . . . . . . . . . 27
+viii
+--- PAGE 10 ---
+Chapter 1
+Introduction
+A pivotal change has been witnessed in the gene regulation for the past twenty years. It changed
+the view of scientists to understand biological deposition. In early decades, scientists first
+decoded the human genome and found coding sequences as the key genetic material. On the other
+hand, non-coding sequences, which were the majority part, around ninety-eight to ninety-nine
+percent, were junk DNA. But later they discovered that this portion plays an essential role in
+gene regulation. The dominating non-coding DNA that determines gene expression are called
+enhancers and promoters. Enhancers are defined as cis-regulatory sequences that work from
+a distance but control the process. Whereas promoters are defined as proximal cis-regulatory
+sequences that act as starting positions for the cellular machinery that reads genetic information.
+Despite being physically separated in the linear DNA sequence, enhancers boost the process
+dramatically. Because of DNA folds and loops with the help of proteins. This method is known
+as topologically associating domains (TADs). In the genome, regulatory elements interact in this
+complex way.
+In this internal intricateness, in modern biology it is challenging to find which enhancers
+regulate which genes. This interaction is known as enhancer-promoter interaction (EPI). Its
+prediction is the intersection of computational genomics and molecular biology. This prediction
+helps to understand how genetic variations contribute to diseases such as cancer or developmental
+disorders.
+1.1 Project Overview
+This project introduces a modern deep learning techniques to predict enhancer promoters. in-
+teractions by combining advanced sequence encoding methods. Many existing models converts
+DNA sequence for simplicity or sacrifices precise positions which carry crucial biological infor-
+mation. Our proposed solution, POCD-KansformerEPI, is designed to cover those limitations.
+Firstly, the method Position Specific Nucleotide Density-based encoding (POCD-ND) [ 1] to
+capture nucleotide location and cluster by sequence. Secondly, a hybrid architecture combining
+Kolmogorov-Arnold Networks (KANs) with Transformers [ 15] for the long-range dependencies.
+Also using special information, our solution represents regulatory factors in non-additive ways.
+With our introduced model, significantly better predictions are possible.
+1
+--- PAGE 11 ---
+1.2. Motivation Chapter 1. Introduction
+1.2 Motivation
+The way current methods represent DNA sequences for computational analysis is a major concern.
+1.2.1 The Representation Bottleneck: Beyond Linear Sequences
+Proteins known as transcription factors bind to particular short sequences known as motifs to
+activate regulatory DNA. However, the presence of the correct motif sequence is not the only
+factor that determines whether a transcription factor binds; other factors include how closely
+these motifs cluster together and how far apart they are from other binding sites. This complexity
+presents a challenge to conventional encoding schemes. Position tracking is maintained by one-
+hot encoding, but it produces very sparse, high-dimensional matrices that are computationally
+costly and prone to overfitting when training data is scarce. Conversely, basic k-mer counting
+completely loses track of motif locations while compressing sequences into compact vectors.
+Even though these sequences may have very different biological activities, using this method, a
+sequence with binding sites dispersed throughout and one with the same sites clustered in the
+center appear identical. To capture nucleotide distribution at different positions and recognise
+conserved patterns we adopt POCD-ND encoding method that distinguish functional enhancers
+from inactive sequences [1].
+1.2.2 Modelling Nonlinearity in Gene Regulation
+Gene regulation is another important thing because it is uncertain.Chromatin states contradict in
+complex ways When an enhancer activates a gene . Transcription factors frequently bind together,
+and regulatory proteins can form phase-separated moisture that concentrates the transcriptional
+machinery. The most common regulatory pattern occurs when a single promoter is joined on by
+multiple enhancers, which results in complex interactions between inputs that dictate the final
+output.
+ReLU is a common activation function used by most of the neural networks. But they struggle
+to capture dynamics. For example, Because of non-linear relationships, Multi Layer Perceptrons
+(MLPs) make training difficult even though it is theoretically capable. To overcome this hurdle,
+we used the KansformerEPI framework [ 15], which has trainable activation functions for neuron
+connections. This difference makes multiple enhancers regulate complicated non-linear functions
+more smoothly to their targets.
+1.2.3 Capturing Long-Range Dependencies via Attention
+The sheer scale of genomic distances presents another challenge. Enhancers and their target
+promoters can sit hundreds of thousands of base pairs apart, yet they must somehow communicate
+effectively. Earlier neural network designs like Recurrent Neural Networks (RNNs) and Long
+Short-Term Memory (LSTM) networks work reasonably well for shorter sequences but tend to
+suffer from vanishing gradient problems when dealing with very long inputs.
+The Transformer architecture offers a solution through its self-attention mechanism. Rather
+than processing sequences one element at a time, attention allows every part of the input to
+directly influence every other part, regardless of how far apart they sit in the linear sequence.
+2
+--- PAGE 12 ---
+1.3. Objectives Chapter 1. Introduction
+By building a Transformer encoder into our framework, we ensure that our model can learn
+the global, long-range patterns that characterise enhancer-promoter communication across large
+genomic spans.
+1.2.4 The Interpretability Imperative
+Finally, this research is motivated by the growing recognition that ΓÇ£black boxΓÇ¥ predictions,
+however accurate, have limited utility in biology. Knowing that an enhancer probably interacts
+with a gene is helpful, but understanding why that interaction occurs is far more valuable. This
+type of understanding can be helpful for designing the follow-up experiments. It can help to
+interpret disease-associated genetic variants, and also in connecting computational predictions to
+biological mechanisms.
+Recent work has shown that interpretability and performance need not be mutually exclusive.
+Which parts of an input sequence can influence predictions most effectively can be highlighted by
+the Class Activation Maps method [ 10]. Proximal Policy Optimization [ 6] which is a reinforcement
+learning technique. It can identify which are the most essential features for classification. Our
+motivation includes merging these interpretability tools so that we can identify the ΓÇ£core regionsΓÇ¥
+of enhancers which are the specific subsequences that drive their regulatory activity.
+1.3 Objectives
+To create a predictive deep learning framework which can link all the enhancers to their targeted
+gene by remaining generalizable and interpretable. Our objectives are:
+1.Develop a high-confidence sequence encoder:Finding the positional patterns and
+motif densities of an enhancer sequence by implementing and optimising the Position
+Specific Nucleotide Density-based encoding (POCD-ND). This should tame the sparsity
+issues of One-Hot Encoding and also overcome the spatial information loss of simple k-mer
+counting.
+2.Assemble a Hybrid Nonlinear Architecture:We want to design a neural network
+which will combine Convolutional Neural Networks (CNN) to detect the local patterns and
+BiLSTMs to capture sequential contexts and a Kansformer encoder which combines KAN
+with transformers which will model the global, nonlinear regulatory interactions.
+3.Apply multi-task learning:We want to build a training framework that will simulta-
+neously optimise the prediction of interactions between enhancer-promoter and also the
+distance regression. This double objective will be helping the model learning the spatial
+constraints that controls the communication between enhancer and promoter.
+4.Ensuring the model interpretability:Combine Proximal Policy Optimization (PPO) to
+select features and Class Activation Maps (CAM) for visualising the predictive regions.This
+tools will help point out the sequence features and prediction that drives the modelΓÇÖs
+prediction.
+3
+--- PAGE 13 ---
+1.4. Methodology Chapter 1. Introduction
+5.Validating over diverse cell-line:Demonstrate that the model can work not only on
+specific cell types but beyond by training with the data of multiple cell lines like GM12878
+and HeLa-S3 and testing on independent cell lines like HMEC, IMR90, K562, NHEK. This
+should confirm that the model can learn universal regulatory principals instead of working
+on specific cell type patterns.
+1.4 Methodology
+We followed a systematic approach which is an efficient pipelining that will transform the raw
+genomic data into reliable predictions of interactions between enhancers and promoters. This
+method has 5 core phases where each of them addresses the specific biological and computational
+challenges.
+1.4.1 Phase 1: Data Acquisition, Curation, and Preprocessing
+Good data is the foundation of any kind of machine learning project. In this phase we merge a vast
+dataset from multiple sources. Interaction data comes from the Benchmark datasets for enhancer-
+gene interactionsI (BENGI) repository [ 18], which provides the data of enhancer-promoter pairs
+from Hi-C and ChIA-PET assays across diverse cell types which are experimentally validated.
+For enhancer definitions we used some common resources like CATlas [ 10]and EnhancerAtlas 2.0.
+Generating appropriate negative controls is a tough step. If we pair random promoters with
+random enhancers it will make the model learn by cheating that closer pairs are more likely
+to interact with each other. To avoid this issue, we used distance-matched negative sampling
+[15,18]: for each of the legit interacting pair that are separated by distance d, we have selected
+a non interacting pair which is at a similar distance. To eliminate other potential biases we are
+using GC content and repeat density.
+1.4.2 Phase 2: Advanced Enhancer Encoding via POCD-ND
+In this phase, we show how we are representing the DNA sequences. Here, we use POCD-ND
+encoding to create position-aware feature matrices and avoid treating sequences as simple strings.
+The process works by segmenting sequences into overlapping k-mers.(we have used trinucleotides
+based on previous optimised results), creating position-specific frequency matrices for both
+the positive and the negative examples, normalising these frequencies into density values and
+then we calculate the propensity scores which highlights those positions where enhancers and
+non-enhancers differ the most. The result gives both the presence and the positional distribution
+of sequence motifs which is a dense feature representation.
+1.4.3 Phase 3: Hybrid Feature Integration via Kansformer Architecture
+Information is processed in the neural network architecture through two main parallel streams
+that are sequence stream and epigenetic stream. The sequence stream uses the POCD-ND
+encoded matrix through a 1D CNN and detects the local motif patterns and then uses a BiLSTM
+to capture the sequential arrangement of these motif patterns. The epigenetic stream works
+4
+--- PAGE 14 ---
+1.5. Project Outcome Chapter 1. Introduction
+by processing the chromatin features through its own CNN pathway which include histone
+modifications, CTCF binding, and accessibility signals.
+These streams merge in the Kansformer Encoder, which uses Multi-Head Self-Attention
+to weigh the importance of different features and KAN layers to model nonlinear interactions.
+Unlike standard feed-forward layers with fixed activation functions, KAN layers learn flexible
+activation functions that can adapt to the complex relationships characteristic of gene regulation.
+1.4.4 Phase 4: Prediction with Multi-Task Learning
+The model produces outputs through two prediction heads. The primary head predicts whether
+a given enhancer-promoter pair interacts (binary classification). An auxiliary head predicts the
+genomic distance between the pair (regression). Training both tasks together forces the network
+to learn representations that encode spatial information, which helps prevent overfitting and
+improves generalisation.
+1.4.5 Phase 5: Interpretability, Optimisation, and Validation
+To make our model interpretable, we incorporate a PPO agent that learns to select the most
+important features, effectively creating a feature importance ranking. We also use Class Activation
+Maps to visualise which parts of input sequences most strongly influence predictions. For
+validation, we use cross-cell-line evaluation, training on some cell types and testing on others
+to confirm generalisation. We also perform in silico perturbation experiments, computationally
+mutating predicted important regions to verify that these mutations actually change predictions
+as expected.
+1.5 Project Outcome
+Successfully completing this project should yield several valuable contributions. Most directly, we
+expect to produce a model that outperforms existing methods for predicting enhancer-promoter
+interactions, particularly in cross-cell-line generalisation. The model should capture regulatory
+patterns that other simple approaches will miss because our model is an integration of POCD-ND
+encoding with the Kansformer architecture.
+The interpretability components not only provide raw performances but also with other
+biological insights. We can build a hypothesis on regulatory mechanisms by identifying that
+which sequence positions and chromatin features will drive predictions, which can be tested with
+experimentations. It will make the model more useful for more practical applications like which
+variants can cause diseases in the non-coding regions of DNA. Capturing positional information
+and nonlinear interactions can be very crucial in genomics. Our methodology can be used like a
+template to handle this type of crucial matters. To avoid common biasesThe distance-matched
+negative sampling strategy is a very efficient way of training the data.
+5
+--- PAGE 15 ---
+1.6. Organization of the Report Chapter 1. Introduction
+1.6 Organization of the Report
+The remaining part of the report contains two chapters. Chapter 2 has the project background
+that includes biological preliminaries on gene regulation, a literature review organised by topic,
+and a gap analysis of the current approaches that our project addresses. Chapter 3 is about the
+project design in detail which covers the requirements analysis, the complete methodology with
+all the mathematical formulas, project planning, and allocating tasks.
+6
+--- PAGE 16 ---
+Chapter 2
+Background
+2.1 Preliminaries
+2.1.1 The Regulatory Landscape: Enhancers and Promoters
+Gene expression in complex organisms involves an intricate dance between proteins and DNA.
+On one side are transcription factors and other regulatory proteins that move around the cell
+nucleus. On the other are specific DNA sequences that these proteins recognise and bind to.
+Understanding this interplay is essential for understanding how cells control which genes are
+active and which remain silent.
+Promoters occupy the region immediately before a gene begins. In order to initiate tran-
+scription for RNA Polymerase II, the enzyme that transcribes DNA into mRNA, a docking site
+is provided by promoters. In this sense, promoters act like on-switches for genes. However,
+promoters can only drive a low level of gene activity on their own.
+Enhancers perform a different function. They amplify transcription, instead of initiation.
+Enhancers can improve the trsanscription of their target gene by orders of size once active. Their
+flexibility makes them quite interesting; as they can work from positions upstream or downstream
+of their target genes, surrounded by introns of other genes, and covering distances that can
+stretch hundreds of kilobases. They can also function regardless of their target geneΓÇÖs orientation
+relative.
+This distance autonomy raises questions about the mechanism. How can a distant geneΓÇÖs
+transcription be influenced by a piece of DNA sitting so far away? Part of the answer can be
+found if we delve deep into the protein that binds with enhancers, including transcription factors
+that detect specific short sequence motifs, along with co-activators like p300/CBP and the large
+mediator complex that stretches enhancers to the core transcriptional machinery.
+Tissue specificity is another hurdle. An enhancer that activates neuron gene might be
+completely dormant in liver cells. Due to different cell types exhibiting different transcription
+factor combinations, this specificity arises. An enhancer activates transcription only when the
+right proteins are available to bind with it.
+7
+--- PAGE 17 ---
+2.1. Preliminaries Chapter 2. Background
+2.1.2 Chromatin Looping and the 3D Genome
+The puzzle of how distant enhancers reach their target promoters becomes clearer once we
+consider the three-dimensional organisation of chromosomes. DNA in our cells does not exist as
+straight fibres. Instead, it wraps around histone proteins to form nucleosomes, which further
+compact into higher-order structures. Beyond this basic packaging, the genome adopts a complex
+three-dimensional architecture involving loops and domains.
+At the megabase scale, chromosomes partition into Topologically Associating Domains (TADs).
+Within a TAD, DNA sequences interact frequently with one another, but interactions across
+TAD boundaries are much rarer. These boundaries act as insulators, preventing enhancers in
+one domain from inappropriately activating genes in neighbouring domains. Several proteins
+help establish and maintain this organisation. CTCF recognises specific DNA sequences and
+often marks TAD boundaries. The cohesin complex physically extrudes DNA loops and helps
+anchor them at CTCF sites.
+Within TADs, specific chromatin loops bring enhancers into physical proximity with their
+target promoters. When an enhancer and promoter are held together by such a loop, the proteins
+bound at the enhancer can directly interact with and stimulate the transcriptional machinery
+assembled at the promoter. This looping model explains how linear distance in the genome
+becomes less important than three-dimensional proximity.
+For computational prediction, this architecture poses significant challenges. A model must
+somehow learn the rules governing which enhancers can reach which promotersΓÇönot just recog-
+nising the sequence features that mark enhancers and promoters, but also understanding the
+ΓÇ£syntaxΓÇ¥ that determines which elements can physically contact each other.
+2.1.3 Data Modalities and Experimental Assays
+Two main types of experimental data are drawn on by computational approaches in order to
+predict enhancer-promoter interaction.
+The first group includes epigenomic features that describe the chromatin state at distinct
+genomic positions. ChIP-seq (Chromatin Immunoprecipitation followed by sequencing) maps
+where particular proteins bind throughout the genome. Enhancer prediction relevant targets
+include CTCF, different transcription factors, and histone mutations. Active enhancers commonly
+exhibit enrichment for H3K4me1 (a modification correlated with enhancer priming) and H3K27ac
+(a mark of active enhancers), while active promoters show H3K4me3. DNase-seq and ATAC-seq
+measure chromatin accessibility regions where DNA is not tightly wrapped around nucleosomes
+and is therefore accessible for protein binding. Open chromatin generally indicates active
+regulatory regions.
+The second group includes interaction data that directly measures physical contacts between
+genomic areas. Hi-C provides a genome-wide view of three-dimensional contacts although
+at relatively low resolution. ChIA-PET (Chromatin Interaction Analysis by Paired-End Tag
+sequencing) offers higher resolution by concentrating on interactions moderated by specific
+proteins, such as RNA Polymerase II or CTCF. Prediction models are often developed by using
+these interaction datasets as ground truth labels.
+Although epigenomic data is highly instructive, it comes with practical constraints. These
+8
+--- PAGE 18 ---
+2.2. Literature Review Chapter 2. Background
+experiments are expensive, time-consuming, and must be performed separately for each cell
+type of interest. A model trained to rely on H3K27ac ChIP-seq data, for instance, cannot make
+predictions for a new tissue type without first generating that specific dataset. This limitation
+motivates sequence-based prediction approaches that rely only on the DNA sequence itself, which
+is available for any organism with a reference genome.
+2.2 Literature Review
+The field of computational gene regulation has evolved rapidly over the past couple years.
+This review paper examines key research contributions, organised subjectively from enhancer
+identification to interaction prediction to biological mechanism studies.
+2.2.1 The Evolution of Enhancer Identification
+The field of computational regulation of gene expression has advanced rapidly over the past
+decade. This review examines key research contributions, organised propositionally from enhancer
+identification to interaction prediction to biological mechanism studies.
+One of the most important contribution is the PDCNN model [ 1], it established Position-
+Specific Nucleotide Density-based encoding (POCD-ND). The authors admitted that the way
+nucleotides scatter themselves at different locations within a sequence is not captured by
+traditional sequence encoding. By computing position-aware density features that identifies
+enhancers from non-enhancers based on where certain motifs cluster, POCD-ND tackles this
+problem . The model clearly showed advantage from position-aware encoding, achieving over
+95% accuracy with an MCC of 92.6%.
+The ADH-Enhancer framework [ 3] takes a distinct strategy, which involves elements of natural
+language processing. The authors employed an AWD-LSTM-based language model on genomic
+sequences using an unsupervised technique, creating a feature space that contains the statistical
+patterns of regulatory DNA prior to any supervised learning implementation.For classification,
+this pre-trained model was then combined with a CNN and attention mechanism. This method
+showed how transfer learning from language modeling may benefit genomic applications by
+exceeding previous strategies by 7% in accuracy and 14% in MCC.
+DeepEnhancerPPO [ 6] deals with the interpretability problem head-on. This architecture
+uses Proximal Policy Optimization by incorporating a reinforcement learning component with
+ResNet and Transformer modules. The PPO agent learns to choose which features are important
+for classification, by effectively filtering out noise as well as maintaining strong performance.
+This approach offers a link between biological interpretability that researchers need to generate
+testable hypotheses and high predictive accuracy.
+The Enhancer-MDLF framework [ 9] addresses cell-type specificity by integrating multiple
+input modalities: DNA2Vec embeddings that capture sequence context and motif frequency
+features that summarise transcription factor binding site patterns. By combining these inputs
+through transfer learning, the model generalises well across different cell lines without requiring
+extensive retuning of parameters.
+Enhancer Detector [ 10] explores whether enhancer recognition is evolutionarily conserved.
+9
+--- PAGE 19 ---
+2.2. Literature Review Chapter 2. Background
+Trained on human data, this CNN-based model generalises surprisingly well to mouse and fruit
+fly genomes. The authors used Class Activation Maps to identify which sequence regions drive
+predictions and validated these through computational mutagenesis experiments. Fine-tuning on
+relatively small datasets allowed the model to adapt to new species, suggesting that fundamental
+features of ΓÇ£enhancernessΓÇ¥ are shared across evolution.
+Work on explainable AI approaches [ 25] offers a complement to deep learning methods. One
+study applied Type-2 Fuzzy Logic combined with evolutionary computation to predict enhancers
+from histone modification data. Beyond making predictions, this rule-based system generated
+explicit logical rules explaining the combinations of epigenetic marks that define different enhancer
+classes. Such transparency helps researchers understand what distinguishes active enhancers
+from inactive sequences or primed enhancers waiting for activation signals.
+2.2.2 Evolution of EnhancerΓÇôPromoter Interaction Prediction
+Predicting which enhancers control which genes presents a more challenging problem than simply
+recognizing the enhancers. Interaction prediction needs understanding how two potentially
+distant sequences connect with each other.
+Dynamic Feature fusion, which is a significant architectural advance, is represented by
+EPI-DynFusion[ 11]. From different processing branches, Many previous models simply merged
+features. EPI-DynFusion alternatively applies an attention-guided mechanism that trains on
+weight contributions from different branches (CNN for local features, Transformer/BiGRU for
+global patterns) on the grounds of a certain input. The comparative significance of local versus
+global features differs across different enhancer-promoter pairs, acknowledging this resilience.
+The approach pulled off an AUROC of 96.2%.
+The Transformer architecture is used by EPI-Trans [ 12] for precise interaction prediction.
+DNA2Vec embeddings and CNN layers are used by the model for primary feature extraction,
+then merge enhancer and promoter features in the early stages before augmenting them across
+the Transformer. How Motifs in enhancers relate to motifs in promoters is specifically modeled
+by the Multi-Head Attention mechanism due to this initial integration. The model obtained an
+average AUROC of 95.7%, which confirms that attention mechanisms can capture the long-range
+dependencies deep-rooted between enhancer-promoter connections.
+The main inspiration for our project is KansformerEPI [ 15]. Basic MLP layers are recognized
+as a restriction for modelling the complicated nonlinear relationships in gene regulation by the
+authors. Their solution merges Kolmogorov-Arnold Networks with a Transformer encoder.Rather
+than fixed activations at nodes,KAN layers apply learnable activation functions on network
+edges which allows more adaptable approximation of nonlinear functions. The model represented
+strong performance (AUC greater than 0.90) through many cell lines, with better stability in
+contrast to MLP-based options.
+Efficiency and performance can coexist, as shown by EPInformer [ 13]. Building on the
+Enformer architecture, this Transformer-based framework amalgamates sequences, epigenomic
+signals, and Hi-C contact data to predict gene expression. Prominently, while using only 0.2
+EPIPDLF [ 14] focuses on robustness by adversarial training. The model learns to depend on
+proper biological signals rather than misleading correlations that might appear from noise in the
+10
+--- PAGE 20 ---
+2.2. Literature Review Chapter 2. Background
+training data by using Projected Gradient Descent to generate perturbed inputs during training.
+This approach earned strong benchmark outcomes and advised that robustness may correlate
+with learning biologically meaningful features.
+How data quality affects model performance is highlighted by work on negative set construction
+[18]. Random negative sampling generates datasets where non-interacting pairs are usually farther
+faraway than interacting pairs, allowing models to earn high accuracy by directly learning this
+distance bias. Class-Balanced Maximum-Flow and Class-Balanced Gibbs Sampling methods
+create the distance distribution of positive examples that match the negative sets. When we
+train models on these balanced datasets, they exhibit significantly better recall and precision
+scores when tested carefully.
+In general evaluation practices, the LOCO-EPI [ 19] benchmarking framework [19] exhibits
+weaknesses. Traditional random train-test divisions can result in data leakage when the same
+genomic regions appear in both train-test sets. Leave-One-Chromosome-Out evaluation illustrates
+this by defying whole chromosomes for testing. Under this policy, multiple published models
+perform near chance levels, which reveals that instead of proper biological learning, reported
+accuracies occasionally exhibit overfitting. The authors present a multi-branch network that
+maintains performance even under strict evaluation like LOCO.
+The practical value of these methods is displayed by disease-specific implementations. The
+Transformer-GAN model was used to handle the scarcity of disease-specific interaction data in
+work on periodontitis [ 23]. Key inflammatory genes regulated by distal enhancers are specified
+by the approach, displaying how computational predictions can create practically significant
+hypotheses about disease mechanisms.
+2.2.3 The Interpretability and Feature Reduction Frontier
+Deep learning models present ongoing difficulties to be able to make sense of what they have
+learn. To fulfill this need, multiple approaches have appeared.
+The input regions that contribute most to predictions are highlighted in Class Activation
+Maps present visual explanations. In genomic contexts, this can expose which sequence positions
+or motifs control the classification of a sequence as an enhancer or the prediction that two
+elements communicate. Computational mutagenesis experiments, where high-importance regions
+are disordered and predictions re-evaluated, help authenticate that recognized regions are properly
+functional.
+Reinforcement learning approaches as PPO provide a separate path to interpretability by
+feature selection. By training an agent to pick which features to incorporate while maximising
+prediction accuracy, these methods recognize minimal feature sets enough for good performance.
+The resulting feature importance rankings can guide biological interpretation and experimental
+follow-up.
+Attention weights from Transformer models provide yet another window into model behaviour.
+High attention between certain sequence positions suggests that the model has learned that those
+positions relate to each other. However, interpreting attention weights requires caution, as they
+do not always correspond directly to feature importance in a causal sense.
+11
+--- PAGE 21 ---
+2.3. Gap Analysis Chapter 2. Background
+2.2.4 Related Research and Similar Applications
+Several foundational papers established the architectures that current methods build upon.
+DanQ [ 5] pioneered the combination of CNNs and BiLSTMs for genomic sequence analysis.
+The CNN component captures local motif patterns while the BiLSTM learns how these patterns
+arrange themselves along the sequence. By demonstrating that sequential dependencies matter
+for grasping regulatory DNA, this mixed approach surpassed pure-CNN models
+DeepSite [ 7] applied an equivalent hybrid BLSTM-CNN architecture to predicting protein
+binding sites. Capturing long-range dependencies by recurrent layers remarkably improves
+sensitivity compared to CNNs alone, as confirmed by the work
+DeFine [ 8] enhanced prediction from binary classification to quantitative regression, instead
+of predicting just the presence or absence of binding, it predicts the actual intensity of ChIP-seq
+signals. This change matters because regulatory interactions work on a continuum instead of
+as simple on-off switches. Prioritisation of disease-associated variants based on their predicted
+functional impact is enabled due to the ability to predict quantitative changes in binding intensity.
+Feedbacks of enhancer-promoter biology present essential context for computational work.
+With both processes reinforcing each other, studies examining whether chromatin loops cause
+transcription or vice versa [ 20] offer a mutual causal relationship. This dynamic interplay indicates
+that static computational models may overlook important feedback effects.
+The mechanisms by which cancers hijack gene regulation is demonstrated by the work on
+enhancer deregulation in cancer [ 21]: structural variants that reorder TAD boundaries (enhancer
+hijacking), extrachromosomal DNA that generates novel regulatory environments, and phase-
+separated condensates (onco-condensates) that condense transcriptional machinery improperly.
+The need for models sensitive to chromatin architecture, not just sequence features, is highlighted
+by these mechanisms.
+Studies of the molecular machinery underlying chromatin looping [ 22] recognise the key
+players: cohesin for loop extrusion, CTCF for anchoring loops at particular sites, and transcription
+factors such as LDB1 that can mediate interactions along different mechanisms. A complete
+computational model would ideally learn to identify signatures of these unlike interaction modes.
+2.3 Gap Analysis
+2.3.1 Synthesis and Gap Analysis
+After reviewing a all the current literature it appears that, Deep learning methods have archives
+great performance in identification of enhancer and prediction task. Many aspect of problems
+are addressed by some architectural innovation like attention mechanisms, Transformer encoders
+and hybrid CNN-RNN designs. Tools have stated to open black box thatΓÇÖs help researchers
+to identify some important features. So far remarkable gap still remain. So many innovation
+exist separately with sophisticated sequence encoding which is use for enhancer identification
+but not combined in the prediction pipelines and simplistic input representation in advanced
+architectures. There are some studies use very strict cross chromosome validation while some
+other based on random splits which can increase reported performance. Some complexity of
+12
+--- PAGE 22 ---
+2.4. Summary Chapter 2. Background
+gene regulation including phase separation, cooperative binding and dynamic state are still
+incompletely captured by current models.
+2.3.2 Fundamental Gaps
+There are three fundamental gaps that motivate us for this project:
+Gap 1: Disconnect Encoding-Architecture.POCD-ND is very effective for enhancer
+identification, capturing density and distribution information. POCD-ND is based on position
+aware encoding. On the other hands, KansformerEPI and EPI-Trans are the advance prediction
+models which often use basic embedding or One-Hot encoding as input. A fidelity gap is created
+by this dis-connectivity : The input representation lacks the positional subtlety that sophisticated
+architectures can potentially exploit. Feeding POCD-ND encoded sequences into a Kansformer
+backbone offers an opportunity to synergise these advances.
+Gap 2: Inadequate Nonlinear Fusion.KansformerEPI introduces KAN layers to model
+nonlinearity, but uses relatively simple methods to combine sequence and epigenetic features.
+EPI-DynFusion demonstrates the value of dynamic, context-dependent fusion, but does not
+employ the flexible nonlinear modelling of KANs. Integrating KAN-based fusion that can learn
+complex weighting functions for combining different data modalities represents a natural next
+step.
+Gap 3: Limited Interpretability in Interaction Models.Reinforcement learning-based
+feature selection has proven powerful for enhancer classification in DeepEnhancerPPO, but has not
+been applied to the more complex task of interaction prediction. Extending PPO-based feature
+reduction to identify features relevant for interactions (rather than just for classifying individual
+elements) would provide new insight into what drives enhancer-promoter communication.
+2.3.3 Comparative Summary
+Table ??summarises how existing methods address different aspects of EPI prediction and how
+our proposed approach aims to combine their strengths.
+graphicx
+Table 2.1: Unified comparison of existing approaches, identified gaps, and the proposed POCD-
+KansformerEPI
+Dimension KansformerEPI TransEPI PDCNN DeepEnhancerPPO EPI-DynFusion Proposed: POCD-KansformerEPI
+Primary TaskEPI Prediction EPI Prediction Enhancer Identification Enhancer Identification EPI PredictionEPI Prediction
+Sequence EncodingEmbeddings OHEPOCD-ND4-mer Embedding DNA2VecPOCD-ND
+Architecture KAN + TransformerTransformer CNN ResNet + Transformer Transformer + BiGRUKAN + Transformer + BiLSTM
+Nonlinear ModelingYes Limited Moderate Moderate YesStrong (KAN-based)
+Feature Fusion StrategyStatic Static N/A ConcatenationDynamic Attention Dynamic + KAN-based Fusion
+Multi-task LearningYes No No No NoYes
+Interpretability MechanismBasic None NoneRL (PPO)Attention / CBAMRL (PPO) + CAMs
+Cross Cell-line GeneralizationYes Partial No Limited YesYes
+2.4 Summary
+This chapter has established the biological and computational foundations for our project.
+Enhancers and promoters communicate across large genomic distances through chromatin looping,
+creating a prediction problem that requires understanding both sequence features and three-
+dimensional genome organisation. Experimental data from ChIP-seq, accessibility assays, and
+13
+--- PAGE 23 ---
+2.4. Summary Chapter 2. Background
+chromosome conformation capture techniques provide the raw material for computational models.
+The literature review traced the evolution of methods from simple classifiers to sophisticated
+deep learning architectures. Advance models like Transformer attention mechanisms, hybrid
+CNN-RNN design, position aware sequence encoding and KAN layer use for nonlinear modelling.
+Class activation Maps and reinforcement learning based feature selection can help to connect
+biological mechanisms prediction. In our Gap analysis we found three main opportunities:
+1.Combining position aware encoding with advance architectures. 2.Fusion implementation
+feature based on KAN. 3.Extending interpretability methods, for Interaction prediction. The
+specific contribution of our project is defined by these gaps.
+14
+--- PAGE 24 ---
+Chapter 3
+Project Design
+3.1 Requirement Analysis
+3.1.1 Functional and Nonfunctional Requirements
+Functional requirements:
+ΓÇóEnhancer and promoter supports inputs of raw DNA sequences.
+ΓÇóEpigenetic changes in a cell cycle like histone modifications, accessibility signals processes
+as an optional feature data .
+ΓÇóFrom input sequences it creates POCD-ND for encoded representations.
+ΓÇóPredicts enhancer-promoter interaction status in binary.
+ΓÇóGenerate an auxiliary output by estimating the genomic distance between input pairs.
+ΓÇóGenerate Intuitive outputs like importance ranking and activation maps.
+ΓÇóLarge scale genomic analysis compatibility with batch processing.
+Non-functional requirements:
+ΓÇóPerformance:On cross-cell-line validation achived above 90 percent AUROC
+ΓÇóEfficiency:Reasonable time queries processing for practical use
+ΓÇóGeneralisability:Maintain good performance on real world unseen data and handles well
+ΓÇóInterpretability:Besides raw prediction it also provide biological insights
+3.1.2 Context Diagram
+The system also acts on external entities:
+ΓÇóGenomic Databases:BENGI, ENCODE, CATlas and Enhancer Atlas.
+ΓÇóUser Interface:It supports queries of specific genomic sequences.
+15
+--- PAGE 25 ---
+3.2. Detailed Methodology and Design Chapter 3. Project Design
+ΓÇóOutput Consumers:Shows the analysis pipelines and companion as a visualization tool
+and also provides experimental validation.
+From the genomic databases to the modelΓÇÖs predictions, the system provides interpretability
+outputs to the users.
+3.1.3 Data Flow Diagram Level 1
+The system processes data through the following stages:
+1.Data Ingestion:Raw sequences and coordinates enter the system
+2.Preprocessing:Sequences are validated, standardised, and prepared for encoding
+3.POCD-ND Encoding:Sequences transform into position-aware density matrices
+4.Epigenetic Processing:Chromatin features are extracted and normalised
+5.Feature Fusion:Sequence and epigenetic streams merge in the Kansformer
+6.Prediction:Classification and regression heads generate outputs
+7.Interpretation:PPO agent and CAM modules produce explanatory outputs
+8.Output Formatting:Results package for delivery to users
+3.1.4 UI Design
+The system will provide:
+ΓÇóCommand-line interface for batch processing and pipeline integration
+ΓÇóConfiguration files for specifying model parameters and data paths
+ΓÇóOutput files in standard formats (TSV for predictions, image formats for visualisations)
+ΓÇóLogging of training progress and evaluation metrics
+3.2 Detailed Methodology and Design
+You have to mention alternate solutions that you have considered. Why you have selected the
+specific solution, etc.
+3.2.1 Data Acquisition and Preprocessing
+Training data comes from the BENGI repository, which provides validated enhancer-promoter
+pairs from multiple cell types. Positive examples are pairs where experimental evidence (Hi-C,
+ChIA-PET) supports physical interaction. Negative examples use the distance-matched strategy:
+for each positive pair at distance d, we sample a non-interacting pair at approximately the same
+distance. This prevents the model from learning distance as a shortcut.
+Epigenetic features extract from a 2.5 Mbp window centred on each pair:
+16
+--- PAGE 26 ---
+3.2. Detailed Methodology and Design Chapter 3. Project Design
+1. CTCF binding (loop anchors)
+2. DNase accessibility (open chromatin)
+3. DNA methylation (often inversely correlated with activity)
+4. H3K4me1 (enhancer priming)
+5. H3K4me3 (promoter activity)
+6. H3K27me3 (Polycomb repression)
+7. H3K36me3 (transcription elongation)
+8. H3K9me3 (heterochromatin)
+Signals are binned into 500 bp segments and averaged within each bin, creating a context
+matrixCΓêêRBins├ù8.
+3.2.2 POCD-ND Encoding
+The encoding proceeds in four steps:
+Step 1: K-mer Segmentation.Input sequences of length Lsplit into overlapping
+trinucleotides (k=3), based on prior optimisation showing this balances feature richness with
+manageable sparsity.
+Step 2: Position-Specific Frequency Matrices.Two matrices AposandAnegof size
+64├ù(LΓêÆ2) count how often each trinucleotide appears at each position in positive and negative
+sequences respectively.
+Step 3: Density Normalisation.Frequencies convert to densities by dividing by total
+k-mer counts:
+Apos
+den=Apos
+NSpos, Aneg
+den=Aneg
+NSneg
+Step 4: POCD-ND Calculation.The final encoding combines propensity (ratio of
+densities) with weighting by minimum density to avoid artifacts from rare k-mers:
+PSTNPss i,j=Apos
+den(i,j)
+Aneg
+den(i,j)
+POCD-ND i,j=PSTNPss i,j├ùmin/parenleftbigApos
+den(i,j),Aneg
+den(i,j)/parenrightbig
+3.2.3 Neural Architecture
+Sequence Branch:The POCD-ND matrix feeds into 1D CNN layers that detect local motif
+patterns. A BiLSTM layer then processes the CNN output bidirectionally, capturing sequential
+dependencies and the ΓÇ£grammarΓÇ¥ of motif arrangements.
+Epigenetic Branch:The context matrix Cpasses through CNN layers with max pooling
+to extract salient chromatin features while compressing dimensionality.
+17
+--- PAGE 27 ---
+3.3. Project Plan Chapter 3. Project Design
+Kansformer Encoder:Outputs from both branches concatenate to form fused features Z.
+The encoder applies:
+1. Multi-Head Self-Attention:
+Attention(Q,K,V) = softmax/parenleft∩ú¼igg
+QKT
+ΓêÜdk/parenright∩ú¼igg
+V
+2. KAN Layers replacing standard feed-forward networks:
+Zk+1,q =nk/summationdisplay
+p=1╧åk,q,p(Zk,p)
+where╧åfunctions are learnable B-spline activations on network edges.
+Prediction Heads:
+Classification head:
+p=╧â/parenleftbigKAN 1(H)/parenrightbig
+Distance regression head:
+dp=KAN 2(H)
+Loss Function:
+L=L class(y,p) +╬╗L dist(dp,dt)
+whereLclassis Binary Cross-Entropy, Ldistis Mean Squared Error, and ╬╗weights the auxiliary
+task.
+3.2.4 Interpretability Modules
+PPO Feature Selection:A reinforcement learning agent receives the fused feature vector
+as state, outputs a binary mask selecting which features to retain, and receives classification
+accuracy as reward. Over training, the agent learns to identify features essential for prediction.
+Class Activation Maps:CAMs visualise which input positions contribute most strongly
+to predictions. We validate identified regions through in silico mutagenesis, scrambling high-
+importance positions and confirming that predictions change appropriately.
+3.3 Project Plan
+The project proceeds through the following phases:
+1.Weeks 1-2:Data collection and preprocessing pipeline development
+2.Weeks 3-4:POCD-ND encoding implementation and validation
+3.Weeks 5-7:Neural architecture implementation (sequence branch, epigenetic branch,
+Kansformer encoder)
+4.Weeks 8-9:Multi-task learning framework and loss function tuning
+18
+--- PAGE 28 ---
+3.4. Task Allocation Chapter 3. Project Design
+5.Weeks 10-11:Interpretability module integration (PPO, CAMs)
+6.Weeks 12-13:Cross-cell-line validation experiments
+7.Week 14:Ablation studies and performance analysis
+8.Weeks 15-16:Documentation and final report preparation
+3.4 Task Allocation
+Project tasks distribute across team members as follows:
+ΓÇóData Engineering:Database integration, preprocessing pipelines, negative sampling
+implementation
+ΓÇóEncoding Development:POCD-ND implementation, validation against published results
+ΓÇóArchitecture Implementation:CNN, BiLSTM, Transformer, and KAN layer coding
+ΓÇóTraining Infrastructure:Loss functions, optimizers, learning rate schedules, checkpoint-
+ing
+ΓÇóInterpretability:PPO agent implementation, CAM visualisation tools
+ΓÇóEvaluation:Benchmark comparisons, ablation studies, statistical analysis
+ΓÇóDocumentation:Code documentation, user guides, final report
+3.5 Summary
+This chapter has presented the complete design for the POCD-KansformerEPI system. Require-
+ments analysis established what the system must accomplish and the constraints it must satisfy.
+The detailed methodology walked through each component from data preprocessing through
+POCD-ND encoding to the hybrid Kansformer architecture and interpretability modules. The
+project plan and task allocation provide a roadmap for implementation.
+The design addresses the three gaps identified in the background chapter: it combines
+position-aware POCD-ND encoding with the advanced Kansformer architecture, implements
+KAN-based feature fusion, and extends interpretability through PPO-based feature selection and
+CAM visualisation. Successful implementation should yield a model that not only achieves strong
+prediction performance but also provides biological insights into the sequence and chromatin
+features that govern enhancer-promoter communication.
+19
+--- PAGE 29 ---
+Chapter 4
+Implementation and Results
+[Must be present in Final Report. Incomplete version might be included in FYDP-1 Report,
+however it is optional.]
+Every chapter should start with 1-2 sentences on the outline of the chapter.
+4.1 Environment Setup
+4.2 Testing and Evaluation
+4.3 Results and Discussion
+4.4 Summary
+20
+--- PAGE 30 ---
+Chapter 5
+Standards and Design Constraints
+This chapter outlines the technical and operational standards governing the POCD-KansformerEPI
+framework for enhancer-promoter interaction (EPI) prediction, along with design constraints,
+cost analysis, and characterisation as a complex engineering problem.
+5.1 Compliance with the Standards
+Implementation of a combination of different frameworks for enhancer-promoter interaction
+(EPI) prediction requires obedience to multiple technical and operational standards of software,
+hardware, and communication sectors. This section highlights the compliance mechanisms
+predicted for the proposed system.
+5.1.1 Software Standards
+The software architecture integrates multiple important standards to assure quality and repro-
+ducibility.
+Programming and Development Standards:Code implementation follows Python
+Enhancement Proposal (PEP) 8 standards to ensure consistency and maintainability.Open source
+frameworks like TensorFlow or PyTorch with GitHub repositories as version controller are being
+utilised for developing models. To keep a track of the performance metrics, hyperparameter
+configurations, and other runtime diagnostics, all the training models include logging. [1, 15].
+Alternatives Considered:
+ΓÇóMATLAB:Though it offers robust numerical computing, it lacks the large-scale deep
+learning environment and the significant community support that is available for Python.
+ΓÇóJulia:It offers great computational speed but for genomics applications, it has a smaller
+environment. Also it provides fewer pre-trained models than Python.
+ΓÇóR:Great for statistical analysis but for deep learning framework the support is very limited
+compared to Python.
+Rationale:Python with PyTorch/TensorFlow is selected for its vast bioinformatics libraries
+(Biopython, pybedtools), optimized deep learning frameworks, and a common choice in computa-
+tional biology research ensuring reproducibility.
+21
+--- PAGE 31 ---
+5.1. Compliance with the Standards Chapter 5. Standards and Design Constraints
+Machine Learning and Data Processing Standards:We preprocess the Dataset
+following the ENCODE and GEO standards for genomic data representation [ 24]. POCD-
+ND encoding technique is used for DNA sequence encoding to have consistent position-aware
+representation that ensures compatibility with transformer and CNN modules. Data is augmented
+using the sliding window approach (window size k=3, step size s=1) as validated in sequence-based
+EPI prediction literature. [12].
+Benchmarking and Validation Standards:Area Under the Receiver Operating Char-
+acteristic Curve (AUROC) and Area Under the Precision-Recall Curve (AUPR) [ 18,19] are
+widely accepted evaluation metrics to satisfy the bioinformatics standards. The Leave-One
+Chromosome-Out (LOCO) strategy is used in Cross-validation to tackle sequence homology-
+based data leakage[ 19]. We followed class-balanced negative sampling protocols with a 1:20
+positive-to-negative ratio across six ENCODE cell lines (GM12878, HeLa-S3, HUVEC, IMR90,
+K562, NHEK) [11, 12] to train the models.
+5.1.2 Hardware Standards
+Strict hardware requirements must be met by the computing infrastructure that facilitates model
+training and inference
+GPU and Computing Resources:The minimum GPU needed to train a model is an
+NVIDIA Tesla K40C or any other GPU equivalent of 12 GB VRAM. The recommended hardware
+for training multiple models as part of a model ensemble is an NVIDIA GeForce RTX 2080 Ti
+(11GB VRAM) with 256GB of system memory. For validating the model ensemble results, this
+configuration will also be used. Training of each model takes approximately 33.2-35.0 minutes
+for each cell line on recommended hardware [11].
+Alternatives Considered:
+ΓÇóCloud Computing (AWS/GCP):While scalable, cloud computing solutions incur
+ongoing expenses and have high data transfer costs.
+ΓÇóCPU-only Training:Removes need to train on GPUs, however, increases training times
+by an order of magnitude.
+ΓÇóTPU (Tensor Processing Units):Optimized for TensorFlow-based architectures and
+performance, TPUs are not flexible enough to be used as a substitute for custom KAN
+Layer Implementations.
+Rationale:Because local GPU hardware is the most cost-effective option when dealing with
+large training run times, while providing the ability to maintain user data in house and allowing
+for greater flexibility in implementation of custom KAN Layers, local GPU hardware has been
+chosen as the preferred architecture.
+Memory and Storage Specifications:A total of 4ΓÇô5GB of memory will be required
+as a base memory footprint for the hybrid POCD-KansformerEPI architecture[ 11], while a
+minimum of 50ΓÇô100 GB of local disk space will be required for storing the augmented datasets
+and checkpoints of the models. The system will require at least 8 GB of system RAM, however,
+16 GB will be preferred to ensure smooth multi-tasking during the development phase of this
+project.
+22
+--- PAGE 32 ---
+5.2. Design Constraints Chapter 5. Standards and Design Constraints
+Computational Specifications:It will require multi-Core CPU (4ΓÇô8 cores) Ubuntu 18.04
+LTS or equivalent Operating System, Python 3.7 or higher and faramwork like TensorFlow 2.x
+or PyTorch 1.x.
+5.1.3 Communication Standards
+Data Integration and Interoperability:The exchange of genomic information occurs in
+the form of FASTA format for DNA sequences; FASTQ format is used when quality-annotated
+sequence information is exchanged. Epigenomic annotation formats for ChIP-seq, ATAC-seq
+and DNA methylation follow the ENCODE data standards regarding peak calling and signal
+representation [ 24]. Model Output Formatting: The model output is formatted as a comma-
+separated values file (CSV) with structural metadata including cell-line identifiers, EPI probability
+scores and confidence intervals.
+Documentation and Reporting Standards:Technical documentation complies with
+IEEE Standard 1016-2009 for software design specifications. Model interpretability reports follow
+explainable AI (XAI) standards, including saliency maps and attention weight visualisation [ 25].
+Performance reporting adheres to FAIR (Findable, Accessible, Interoperable, Reusable) data
+principles and bioinformatics standards.
+Version Control and Reproducibility:Git repositories with detailed commit message
+documents all code changes and experimental progression. Experimental tracking of Jupyter
+Notebooks uses Markdown for the explanation. Docker containerization allows for consistent
+and reproducible results on any given computing environment.
+5.2 Design Constraints
+Only mention the constraints that are related to the design of your project. This list is not
+complete.
+5.2.1 Economic Constraint
+5.2.2 Environmental Constraint
+5.2.3 Ethical Constraint
+5.2.4 Health and Safety Constraint
+5.2.5 Social Constraint
+5.2.6 Political Constraint
+5.2.7 Sustainability
+5.3 Cost Analysis
+The enhancer-promoter interaction prediction framework is designed to minimise financial
+overhead while maintaining high research quality.
+Primary Budget:
+23
+--- PAGE 33 ---
+5.4. Complex Engineering Problem Chapter 5. Standards and Design Constraints
+Item Estimated Cost (USD)
+Software Licenses (Open-source) $0
+GPU Hardware (NVIDIA RTX 2080 Ti) $700ΓÇô1,000
+Storage (1TB SSD) $100
+Development Workstation $1,500ΓÇô2,000
+Cloud Backup (Annual) $100
+Total $2,400ΓÇô3,200
+Alternative Budget (Cloud-Based):
+Item Estimated Cost (USD)
+AWS/GCP GPU Instance (500 hours @$3/hr) $1,500
+Cloud Storage (100GB for 12 months) $250
+Development Laptop (Mid-range) $800
+Total $2,550
+Rationale:The primary budget with local GPU hardware was selected because: (1)
+it provides unlimited training iterations without per-hour costs, (2) faster iteration during
+development without network latency, (3) complete control over software environment, and (4)
+hardware remains useful for future projects after completion.
+Revenue Model:As an academic research project, direct revenue generation is not the
+primary objective. However, potential value creation includes:
+ΓÇóPublication in peer-reviewed bioinformatics journals.
+ΓÇóOpen-source tool adoption by the computational biology community.
+ΓÇóFoundation for future research grants in gene regulation prediction.
+ΓÇóPotential licensing of novel architectural components for commercial applications.
+5.4 Complex Engineering Problem
+5.4.1 Complex Problem Solving
+A complex engineering-problem spanning multiple dimensions of computational biology, integra-
+tion of genomic data and architecture design of machine learning is represent by enhancer-promoter
+interaction (EPI) prediction challenge. Table 5.1 provides a extensive mapping of the 7 complex
+parameters to our research domain.
+P1: Depth of Knowledge Required
+Very carefull Integration of multiple knowledge domains is required for this research. For
+understanding enhancer-promoter regulatory interaction it requires proficiency knowledge of:
+ΓÇóMolecular Biology:Molecular biology is study of chromatin organisation mechanism,
+factor binding, long range DNA interaction and transcription factor binding [20, 22].
+24
+--- PAGE 34 ---
+5.4. Complex Engineering Problem Chapter 5. Standards and Design Constraints
+Table 5.1: Mapping with complex problem solving.
+P1 P2 P3 P4 P5 P6 P7
+Depth of
+KnowledgeRange of
+Conflicting
+Require-
+mentsDepth of
+AnalysisFamiliarity
+of IssuesExtent of
+Applicable
+CodesExtent
+of Stake-
+holder
+Involve-
+mentInter-
+dependence
+ΓêÜΓêÜΓêÜΓùªΓêÜΓêÜΓêÜ
+Satisfied Satisfied Satisfied Partial Satisfied Satisfied Satisfied
+ΓÇóComputational Genomics:this is the study of Processed sequencing data from ChIA-
+PET, Hi-C, and ChIP-seq experiments [24].
+ΓÇóDeep Learning Architectures:used for Understand chromatin looping and topologically
+associating domains (TADs)[5, 15].
+ΓÇó3D Genome Topology:used for Understand chromatin looping and topologically associ-
+ating domains (TADs) [20].
+Knowledge Profile Mapping:
+Knowledge Domain Level Required Rationale
+Molecular Biology Advanced Understanding gene regulation mechanisms
+Deep Learning Expert Designing hybrid KAN-Transformer architectures
+Bioinformatics Advanced Genomic data processing and validation
+Mathematics Intermediate Loss function design, attention mechanisms
+Software Engineering Intermediate Reproducible pipeline development
+P2: Range of Conflicting Requirements
+Competing intention that avert simple optimization is the fundamental characteristic of the e
+EPI prediction problem. [11, 12]:
+ΓÇóAccuracy vs. Efficiency:It is important to maintain the balance between maximising
+model accuracy (AUROC/AUPR) and computational efficiency constraints(training time
+40 minutes, memory 5 GB)
+ΓÇóGeneralisation vs. Specificity:In individual cell line Cell-type-specific model achieve
+superior accuracy but in generalise tissue itΓÇÖs fail
+ΓÇóSequence-only vs. Multi-omics:Reproducibility increase if it relying on DNA sequence
+but it also ignore epigenomic context crucial when in terms of biological fidelity
+ΓÇóInterpretability vs. Complexity:IIncreasing interpretability of a model causes compu-
+tational overhead.
+25
+--- PAGE 35 ---
+5.4. Complex Engineering Problem Chapter 5. Standards and Design Constraints
+P3: Depth of Analysis
+To solve the EPI prediction problem it required systematic analysis through computational and
+biological scales. [1, 12]:
+ΓÇóSequence Level:positional nucleotide encoding using POCD-ND,DNA k-mer composition
+and discovery of transcription factor motif
+ΓÇóArchitecture Level:Kansformer configuration and characteristics optimisation is filter
+by CNN (embedding dimensions, KAN layer depth, attention heads ).
+ΓÇóGenome Level:topologically associating domains (TADs) which constrain permissible
+long-range interactions analysis must accounted
+ΓÇóCell-type Level:SyDoing systematic comparison in 6 ENCODE cell line finds EPI
+patterns vary substantially across tissues
+P4: Familiarity of Issues (Partially Satisfied)
+In EPI prediction, Integration of POCD-ND encoding with Hybrid KAN-Transformer architecture
+become novel research territory After the deep learning has become well-established in genomics
+in prominence publication like DeepSite [7] and DanQ [5]. Previous work has established
+transformer-based approaches and CNN separately. [11, 15].
+P5: Extent of Applicable Codes
+ThA well-defined ecosystem of bioinformatics standards is required for this research. [19, 24]:
+ΓÇócompatibility with publicly available experimental resources ensure by ENCODE data
+standards
+ΓÇóit is need to maintain principles like FAIR (Findable, Accessible, Interoperable, Reusable)
+for structure data stewardship and code availability
+ΓÇóRather than raw accuracy Bioinformatics evaluation standards mandate use of AUROC
+and AUPR metrics
+ΓÇósequence homology from inflating generalisation estimates by LOCO (Leave-One-Chromosome-
+Out) cross-validation paradigm prevents [19].
+P6: Extent of Stakeholder Involvement
+Engagement of multiple, sometimes conflicting stakeholder groups is happened in the EPI
+prediction research [21]:
+ΓÇóComputational Biologists:Mechanistic understanding and Prioritise interpretability
+ΓÇóGenomics Researchers:Proper benchmarking on rigidity and dataset diversity.
+ΓÇóClinical Researchers:For translational applications it need to seek disease-specific
+predictions.
+ΓÇóFunding Organisations:reproducibility and resource efficiency is required
+26
+--- PAGE 36 ---
+5.4. Complex Engineering Problem Chapter 5. Standards and Design Constraints
+P7: Interdependence of Components
+significant component interdependencies is exhibits by The POCD-KansformerEPI framework
+[11, 12]:
+ΓÇóCNN feature extraction affects downstream by POCD-ND encoding quality directly.
+ΓÇóHow efficiently the Kansformer learns long-range dependencies is affected by Position-aware
+nucleotide encoding
+ΓÇócoupling between prediction heads by Multi-task learning (classification + distance regres-
+sion)
+ΓÇóFeature selection agent training of PPO is depends on stable base model predictions.
+5.4.2 Engineering Activities
+the project to complex engineering activity characteristics. Is mapped by the Table 5.2
+Table 5.2: Mapping using complex engineering activities and other.
+A1 A2 A3 A4 A5
+Range of Re-
+sourcesLevel of Interac-
+tionInnovation Consequences for
+Society and Envi-
+ronmentFamiliarity
+ΓêÜ ΓêÜ ΓêÜ ΓêÜΓùª
+Satisfied Satisfied Satisfied Satisfied Partial
+A1: Range of Resources
+The project requires diverse resources from different categories:
+ΓÇóComputational:Data: BENGI benchmarked data, ENCODE datasets multiple cell line
+epige nomic profiles.
+ΓÇóData:Computational: storage systems, cloud backup infrastructure and GPU clusters.
+ΓÇóSoftware:Human: machine learning, expertise in molecular biologyand software engineer-
+ing knowledge.
+ΓÇóHuman:Software: Bioinformatics tools with Deep learning frameworks and visualisation
+libraries
+A2: Level of Interaction
+Complex interactions is involved in the system:
+ΓÇóComponent Interactions:POCD-ND encoder ΓåÆCNNΓåÆBiLSTMΓåÆKansformerΓåÆ
+Prediction heads.
+27
+--- PAGE 37 ---
+5.5. Summary Chapter 5. Standards and Design Constraints
+ΓÇóData Flow Interactions:Epigenetic streams and Sequence merge using dynamic Mecha-
+nisms
+ΓÇóStakeholder Interactions:Understandin between the computational and the experimen-
+tal biology perspectives is very much needed.
+A3: Innovation
+Several innovative contributions is introduced by the project:
+ΓÇóFirst integration of Kansformer architecture with POCD-ND encoding for EPI prediction.
+ΓÇóDynamic feature fusion mechanism(Novel KAN-based) combining sequence and epigenomic
+data.
+ΓÇóPPO-based feature is extend for selection from enhancer classification to interaction
+prediction.
+ΓÇóMulti-task learning framework combining binary classification with distance regression.
+A4: Consequences for Society and Environment
+The research has potential some societal impacts like:
+ΓÇóPositive:Its Improves understanding of potential applications with gene regulation mech-
+anisms in identifying disease-associated based on genetic variants with using advancement
+of computational biology tools[21].
+ΓÇóEnvironmental:OOptimised model are designing for minimises computational energy
+consumption.
+ΓÇóHealthcare:Using dysregulated gene expression Predictions may eventually contribute to
+understanding diseases , including cancer and other developmental disorders
+A5: Familiarity (Partially Satisfied)
+The POCD-KansformerEPI architecture represents novel territory While individual components
+(CNNs, Transformers, genomic data processing) are well-established and use their specific
+combination .The integration of KAN-based nonlinear modelling with POCD-ND encoding has
+not been previously explored for enhancer-promoter interaction prediction[1, 15].
+5.5 Summary
+28
+--- PAGE 38 ---
+Chapter 6
+Conclusion
+[Must be present in FYDP-1 Report and also in Final Report. Might be incomplete in FYDP-1
+Report.]
+Every chapter should start with 1-2 sentences on the outline of the chapter.
+6.1 Summary
+6.2 Limitation
+6.3 Future Work
+29
+--- PAGE 39 ---
+References
+[1]Huang Z, et al. A deep learning model for DNA enhancer prediction based on nucleotide
+position aware feature encoding.Briefings in Bioinformatics, 2024. https://pubmed.ncbi.
+nlm.nih.gov/38868182/
+[2]Alshahrani M, Soufan O, Magana-Mora A, Bajic VB. PROCABLES: A CNN-BiLSTM-LSTM
+model for human promoter classification.Bioinformatics, 2020.
+[3]Alam T, et al. ADH-Enhancer: An attention-based deep hybrid framework for enhancer
+identification and strength prediction.Briefings in Bioinformatics, 2024. https://pubmed.
+ncbi.nlm.nih.gov/38385876/
+[4]Oubounyt M, et al. Deep learning-based promoter identification with LSTM and attention
+mechanism.BMC Bioinformatics, 2019.
+[5]Quang D, Xie X. DanQ: A hybrid convolutional and recurrent deep neural network for
+quantifying the function of DNA sequences.Nucleic Acids Research, 2016;44(11):e107.
+[6]Liu Y, et al. DeepEnhancerPPO: Deep learning with proximal policy optimization for
+enhancer prediction.Bioinformatics, 2023.
+[7]Jimenez J, Doerr S, Martinez-Rosell G, Rose AS, De Fabritiis G. DeepSite: Protein-binding
+site predictor using 3D-convolutional neural networks.Bioinformatics, 2017;33(19):3036ΓÇô
+3042.
+[8]Wang M, et al. DeFine: A CNN-based method for predicting transcription factor binding
+intensity.Bioinformatics, 2018.
+[9]Zhang Y, et al. Enhancer-MDLF: A multi-input deep learning framework for enhancer
+identification using DNA2Vec and motif features.Frontiers in Genetics, 2022.
+[10]Lin J, et al. EnhancerDetector: Enhancer discovery from human to fly via interpretable deep
+learning.Nature Communications, 2024. https://www.researchgate.net/publication/
+392275046
+[11]Chen X, et al. EPI-DynFusion: Enhancer-promoter interaction prediction model based on
+sequence features and dynamic fusion mechanisms.Frontiers in Genetics, 2025. https://www.
+frontiersin.org/journals/genetics/articles/10.3389/fgene.2025.1614222/full
+30
+--- PAGE 40 ---
+References References
+[12]Wang H, et al. EPI-Trans: An effective transformer-based deep learning model for enhancer
+promoter interaction prediction.Bioinformatics, 2024. https://www.researchgate.net/
+publication/381493589
+[13]Song Z, et al. EPInformer: A scalable transformer-based framework for enhancer-promoter
+interaction prediction.Nature Methods, 2024.
+[14]Ding Y, et al. EPIPDLF: A pretrained deep learning framework for predicting enhancer-
+promoter interactions.Bioinformatics, 2024;41(5):btae716. https://academic.oup.com/
+bioinformatics/article-abstract/41/5/btae716/8046654
+[15]Li X, et al. KansformerEPI: A deep learning framework integrating KAN and transformer for
+predicting enhancer-promoter interactions.Briefings in Bioinformatics, 2025;26(3):bbaf272.
+https://academic.oup.com/bib/article/26/3/bbaf272/8162441
+[16]Xiong HY, et al. The human splicing code reveals new insights into the genetic determinants
+of disease.Science, 2015;347(6218):1254806.
+[17]Kang M, et al. Synthetic promoters: From design principles to applications.Nature Reviews
+Genetics, 2023.
+[18]Avsec Z, et al. Class-balanced negative training sets for enhancer-gene prediction benchmarks.
+Genome Research, 2020.
+[19]Xi Y, et al. LOCO-EPI: A benchmarking paradigm with leave-one-chromosome-out evalua-
+tion for enhancer-promoter interaction prediction.Bioinformatics, 2024.
+[20]Schoenfelder S, Fraser P. Long-range enhancer-promoter contacts in gene expression control.
+Nature Reviews Genetics, 2019;20(8):437ΓÇô455.
+[21]Claringbould A, Zaugg JB. Enhancers in disease: Molecular basis and emerging treatment
+strategies.Trends in Molecular Medicine, 2021;27(11):1060ΓÇô1073.
+[22]Krivega I, Dean A. Enhancer and promoter interactions: Long distance calls.Current
+Opinion in Genetics and Development, 2012;22(2):79ΓÇô85.
+[23]Zhang Q, et al. Transformer-GAN for identifying enhancer-promoter interactions in peri-
+odontitis.Journal of Dental Research, 2024.
+[24]ENCODE Project Consortium. A userΓÇÖs guide to the encyclopedia of DNA elements.PLoS
+Biology, 2020;18(1):e3000490.
+[25]Rahman MS, et al. An explainable AI approach for enhancer prediction using histone code.
+IEEE/ACM Transactions on Computational Biology and Bioinformatics, 2023.
+31

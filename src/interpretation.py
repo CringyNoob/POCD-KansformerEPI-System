@@ -19,7 +19,7 @@ class Interpreter:
         h2 = target_layer.register_full_backward_hook(bwd_hook)
         
         # Inference
-        out, _ = self.model(seq.unsqueeze(0), epi.unsqueeze(0))
+        out, _, _ = self.model(seq.unsqueeze(0), epi.unsqueeze(0))
         
         # Backward
         self.model.zero_grad()
