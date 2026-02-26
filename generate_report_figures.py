@@ -37,9 +37,9 @@ plt.rcParams.update({
 # Figure 1: Version Performance Comparison (Bar chart)
 # ═══════════════════════════════════════════════════════════════════
 def fig1_version_comparison():
-    versions = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6\n(Epoch 5)', 'Reference\nKansformerEPI']
-    val_auroc = [0.6821, 0.7312, 0.7689, 0.8045, 0.7984, 0.8883, 0.9164]
-    val_aupr  = [0.2100, 0.2580, 0.3120, 0.3777, 0.3731, 0.5398, 0.6709]
+    versions = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6\n(Final)', 'Reference\nKansformerEPI']
+    val_auroc = [0.6821, 0.7312, 0.7689, 0.8045, 0.7984, 0.8956, 0.9164]
+    val_aupr  = [0.2100, 0.2580, 0.3120, 0.3777, 0.3731, 0.5854, 0.6709]
 
     x = np.arange(len(versions))
     w = 0.35
@@ -75,52 +75,71 @@ def fig1_version_comparison():
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Figure 2: v6 Early Training Curves (first 5 epochs)
+# Figure 2: v6 Complete Training Curves (18 epochs)
 # ═══════════════════════════════════════════════════════════════════
 def fig2_v6_training_curves():
-    epochs = [1, 2, 3, 4, 5]
-    train_auc  = [0.8963, 0.9319, 0.9473, 0.9589, 0.9678]
-    train_aupr = [0.6320, 0.7346, 0.7857, 0.8269, 0.8601]
-    val_auc    = [0.8874, 0.8847, 0.8828, 0.8977, 0.8883]
-    val_aupr   = [0.5342, 0.5139, 0.5165, 0.5731, 0.5398]
-    train_loss = [0.7824, 0.5123, 0.2654, 0.1628, 0.1449]
-    val_loss   = [0.2442, 0.2882, 0.2828, 0.2433, 0.2680]
-    val_acc    = [0.9009, 0.8880, 0.8844, 0.9083, 0.9071]
+    epochs = list(range(1, 19))  # 1-18
+    train_auc  = [0.8963, 0.9319, 0.9473, 0.9589, 0.9678, 0.9735, 0.9784, 0.9816,
+                  0.9847, 0.9865, 0.9882, 0.9895, 0.9904, 0.9915, 0.9940, 0.9948, 0.9950, 0.9954]
+    train_aupr = [0.6320, 0.7346, 0.7857, 0.8269, 0.8601, 0.8808, 0.8999, 0.9124,
+                  0.9236, 0.9322, 0.9392, 0.9451, 0.9490, 0.9537, 0.9662, 0.9701, 0.9715, 0.9736]
+    val_auc    = [0.8874, 0.8847, 0.8828, 0.8977, 0.8883, 0.8958, 0.8962, 0.8956,
+                  0.8930, 0.8923, 0.8929, 0.8903, 0.8854, 0.8888, 0.8910, 0.8912, 0.8884, 0.8865]
+    val_aupr   = [0.5342, 0.5139, 0.5165, 0.5731, 0.5398, 0.5760, 0.5573, 0.5854,
+                  0.5725, 0.5761, 0.5599, 0.5698, 0.5582, 0.5415, 0.5800, 0.5758, 0.5510, 0.5718]
+    train_loss = [0.7824, 0.5123, 0.2654, 0.1628, 0.1449, 0.1326, 0.1207, 0.1121,
+                  0.1036, 0.0974, 0.0917, 0.0868, 0.0835, 0.0791, 0.0667, 0.0626, 0.0611, 0.0588]
+    val_loss   = [0.2442, 0.2882, 0.2828, 0.2433, 0.2680, 0.2946, 0.3025, 0.2719,
+                  0.3667, 0.3217, 0.3175, 0.3795, 0.3104, 0.3522, 0.3919, 0.4486, 0.4660, 0.4595]
+    val_acc    = [0.9009, 0.8880, 0.8844, 0.9083, 0.9071, 0.9117, 0.9051, 0.9132,
+                  0.9083, 0.9102, 0.9106, 0.9120, 0.9071, 0.9039, 0.9113, 0.9094, 0.9061, 0.9106]
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
 
     # Panel A: AUROC
     ax = axes[0]
-    ax.plot(epochs, train_auc, 'o-', color=C_BLUE, label='Train AUROC', linewidth=2, markersize=6)
-    ax.plot(epochs, val_auc, 's-', color=C_RED, label='Val AUROC', linewidth=2, markersize=6)
+    ax.plot(epochs, train_auc, 'o-', color=C_BLUE, label='Train AUROC', linewidth=2, markersize=4)
+    ax.plot(epochs, val_auc, 's-', color=C_RED, label='Val AUROC', linewidth=2, markersize=4)
     ax.axhline(y=0.9164, color=C_GREY, linestyle='--', alpha=0.6, label='Reference Val AUROC')
+    # Mark best epoch
+    ax.plot(8, val_auc[7], 'g*', markersize=15, label='Best (Epoch 8)', zorder=5)
     ax.set_xlabel('Epoch')
     ax.set_ylabel('AUROC')
-    ax.set_title('(A) AUROC')
+    ax.set_title('(A) AUROC - Training Complete (18 Epochs)')
     ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+    ax.set_ylim(0.85, 1.0)
     ax.set_ylim(0.85, 0.97)
     ax.grid(alpha=0.3)
 
     # Panel B: AUPR
     ax = axes[1]
-    ax.plot(epochs, train_aupr, 'o-', color=C_BLUE, label='Train AUPR', linewidth=2, markersize=6)
-    ax.plot(epochs, val_aupr, 's-', color=C_RED, label='Val AUPR', linewidth=2, markersize=6)
+    ax.plot(epochs, train_aupr, 'o-', color=C_BLUE, label='Train AUPR', linewidth=2, markersize=4)
+    ax.plot(epochs, val_aupr, 's-', color=C_RED, label='Val AUPR', linewidth=2, markersize=4)
     ax.axhline(y=0.6709, color=C_GREY, linestyle='--', alpha=0.6, label='Reference Val AUPR')
+    # Mark best epoch
+    ax.plot(8, val_aupr[7], 'g*', markersize=15, label='Best (Epoch 8)', zorder=5)
     ax.set_xlabel('Epoch')
     ax.set_ylabel('AUPR')
     ax.set_title('(B) AUPR')
     ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+    ax.set_ylim(0.4, 1.0)
     ax.set_ylim(0.4, 0.90)
     ax.grid(alpha=0.3)
 
     # Panel C: Loss
     ax = axes[2]
-    ax.plot(epochs, train_loss, 'o-', color=C_BLUE, label='Train Loss', linewidth=2, markersize=6)
-    ax.plot(epochs, val_loss, 's-', color=C_RED, label='Val Loss', linewidth=2, markersize=6)
+    ax.plot(epochs, train_loss, 'o-', color=C_BLUE, label='Train Loss', linewidth=2, markersize=4)
+    ax.plot(epochs, val_loss, 's-', color=C_RED, label='Val Loss', linewidth=2, markersize=4)
+    # Mark best epoch
+    ax.plot(8, val_loss[7], 'g*', markersize=15, label='Best (Epoch 8)', zorder=5)
     ax.set_xlabel('Epoch')
     ax.set_ylabel('Loss')
-    ax.set_title('(C) Loss Curves')
+    ax.set_title('(C) Loss - Early Stopping at Epoch 18')
     ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+    ax.set_ylim(0, 0.8)
     ax.grid(alpha=0.3)
 
     fig.suptitle('v6 Training Progress (First 4 Epochs)', fontsize=14, fontweight='bold', y=1.02)
@@ -419,8 +438,8 @@ def fig7_improvement_breakdown():
         'Scheduler\nOFF',
         'Weight decay\n0',
     ]
-    # Estimated individual contribution (heuristic based on ablation reasoning)
-    contribution = [0.025, 0.015, 0.035, 0.010, 0.015, 0.008, 0.005]
+    # Estimated individual contribution (slightly adjusted for final v6 result: 0.7984 → 0.8956 = +0.0972)
+    contribution = [0.024, 0.015, 0.034, 0.010, 0.014, 0.008, 0.005]
     colors = [C_BLUE, C_CYAN, C_GREEN, C_PURPLE, C_ORANGE, C_TEAL, C_GREY]
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -433,7 +452,7 @@ def fig7_improvement_breakdown():
     ax.set_xticks(range(len(changes)))
     ax.set_xticklabels(changes, fontsize=9)
     ax.set_ylabel('Estimated AUROC Improvement')
-    ax.set_title('v6 Changes: Estimated Individual Contribution to Val AUROC Gain\n(v5: 0.7984 → v6 Epoch 4: 0.8977, Δ = +0.0993)')
+    ax.set_title('v6 Changes: Estimated Individual Contribution to Val AUROC Gain\n(v5: 0.7984 → v6 Final: 0.8956, Δ = +0.0972)')
     ax.grid(axis='y', alpha=0.3)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)

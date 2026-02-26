@@ -66,6 +66,26 @@ DNA Sequence (6000 bp = 3000 enhancer + 3000 promoter)
 
 **3.48M parameters** — fits comfortably on an NVIDIA L4 (24 GB VRAM).
 
+## Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository_url>
+   cd POCD-KansformerEPI
+   ```
+
+2. **Create a virtual environment (recommended):**
+   ```bash
+   python -m venv .venv
+   ```
+   *On Windows:* `.venv\Scripts\activate`
+   *On Linux/Mac:* `source .venv/bin/activate`
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
 ## Data Requirements
 
 You need **two data archives** (plus the project code itself):

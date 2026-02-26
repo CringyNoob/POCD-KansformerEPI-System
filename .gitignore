@@ -1,0 +1,62 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Jupyter Notebook
+# .ipynb_checkpoints/
+
+# Datasets and Preprocessed Data
+data/
+processed/
+processed.zip
+kansformer.zip
+pocd_kansformer_v4.tar.gz
+*.pt
+*.tsv
+*.tsv.gz
+*.json
+
+# Downloaded Reference Genomes
+*.fa
+*.fa.gz
+*.fai
+*.chrom.sizes
+
+# Model Checkpoints and Outputs
+checkpoints/
+report_figures/
+*.png
+*.pth
+*.pkl
+
+# Logs and Reports
+*.log
+training_log*.txt
+training_report.docx
+paper_text.txt
+*.pdf
+V6_PERFORMANCE_ANALYSIS.md
+VERTEX_AI_V6_GUIDE.md
+TRAINING_REPORT.md
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Vertex AI specific
+# *.ipynb
