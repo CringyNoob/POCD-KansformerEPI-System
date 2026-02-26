@@ -91,7 +91,7 @@ DNA Sequence (6000 bp = 3000 enhancer + 3000 promoter)
 You need **two data archives** (plus the project code itself):
 
 ### 1. `processed.zip` — Epigenetic Signal Files
-**Source on your PC:** `C:\Users\walio\Downloads\New folder (2)\processed\`
+**Source:** Locate your directory containing epigenetic signal files (e.g., `path/to/processed/`)
 
 Contains **48 `.pt` files** — pre-processed genome-wide epigenetic signals at 500 bp resolution. Each file is a dictionary mapping chromosome names to 1D float32 tensors:
 ```
@@ -104,7 +104,7 @@ narrowPeak_K562_CTCF.500bp.pt     →  {"chr1": Tensor(498503), ...}
 - Cell lines: GM12878, HeLa-S3, HMEC, IMR90, K562, NHEK
 
 ### 2. `kansformer.zip` — BENGI Benchmarks + Config
-**Source on your PC:** `D:\FYDP\data\FYDP Datasets (Raw)\kansformer\src\data\`
+**Source:** Locate your raw Kansformer dataset directory (e.g., `path/to/kansformer/src/data/`)
 
 Must contain:
 - **`BENGI/`** folder — TSV.gz files defining enhancer-promoter pairs with labels and distances
@@ -117,23 +117,21 @@ Downloaded automatically on Vertex AI (~3 GB). Enables real DNA sequences for th
 
 ## How to Create the Zip Files
 
-### On your Windows PC:
+### On your local machine:
 
 **Step 1 — Zip the project code:**
-1. Open File Explorer → go to `D:\FYDP\`
-2. Right-click on the `POCD-KansformerEPI` folder
-3. Select **Compress to ZIP file** (or Send to → Compressed folder)
-4. Result: `POCD-KansformerEPI.zip`
+1. Open your terminal or file explorer and navigate to the parent directory of `POCD-KansformerEPI/`.
+2. Compress the `POCD-KansformerEPI` folder to a ZIP archive.
+3. Result: `POCD-KansformerEPI.zip`
 
 **Step 2 — Zip the .pt files:**
-1. Open `C:\Users\walio\Downloads\New folder (2)\processed\`
-2. Select all 48 `.pt` files (Ctrl+A)
-3. Right-click → **Compress to ZIP file**
-4. Rename to `processed.zip`
+1. Navigate to your epigenetic signal `processed/` directory.
+2. Select all 48 `.pt` files.
+3. Compress them to a ZIP file.
+4. Rename the archive to `processed.zip`
 
 **Step 3 — Zip the kansformer data:**
-1. Open `D:\FYDP\data\FYDP Datasets (Raw)\kansformer\src\`
-2. Right-click on the `data` folder (contains BENGI/ and genomic_data/)
+1. Navigate to the Kansformer `data/` directory (contains `BENGI/` and `genomic_data/`).
 3. Right-click → **Compress to ZIP file**
 4. Rename to `kansformer.zip`
 
