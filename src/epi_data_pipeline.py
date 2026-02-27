@@ -165,11 +165,11 @@ class EPIGenomicDataset(Dataset):
         self.ref_genome = None
         if ref_genome_path and os.path.exists(ref_genome_path):
             try:
-                import pysam
-                self.ref_genome = pysam.FastaFile(ref_genome_path)
+                import pyfaidx
+                self.ref_genome = pyfaidx.Fasta(ref_genome_path)
                 print(f"  Reference genome loaded: {ref_genome_path}")
             except ImportError:
-                print("  WARNING: pysam not installed – using dummy sequences")
+                print("  WARNING: pyfaidx not installed – using dummy sequences")
 
         # Storage
         self.samples: List[dict] = []
@@ -330,13 +330,16 @@ class EPIGenomicDataset(Dataset):
         end = start + window
         if self.ref_genome is not None:
             try:
-                seq = self.ref_genome.fetch(chrom, start, end).upper()
+                chrom_rec = self.ref_genome[chrom]
+                chrom_len = len(chrom_rec)
+                end = min(end, chrom_len)
+                seq = str(chrom_rec[start:end]).upper()
                 if len(seq) < window:
                     seq = seq + "N" * (window - len(seq))
                 return seq
-            except Exception:
+            except (KeyError, ValueError):
                 pass
-        # Fallback: N-padded dummy (replaced by real sequences on Vertex AI)
+        # Fallback: N-padded dummy
         return "N" * window
 
     # ---------------------------------------------------------------

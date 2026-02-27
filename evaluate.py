@@ -1,11 +1,11 @@
 """
-Standalone evaluation script for POCD-KansformerEPI.
-Loads the best checkpoint and evaluates on validation and test chromosomes.
+Standalone evaluation script for POCD-KansformerEPI v6.
+Loads the best checkpoint and evaluates on specified test cell lines.
 
 Usage:
-    python evaluate.py                       # Uses configs/config.yaml
-    python evaluate.py --config path/to/config.yaml
-    python evaluate.py --checkpoint path/to/model.pth
+    python evaluate.py --test-cells HMEC NHEK
+    python evaluate.py --test-cells HMEC NHEK --checkpoint output/model_best.pth
+    python evaluate.py --config configs/config.yaml --test-cells HMEC NHEK
 """
 import torch
 import yaml
@@ -17,8 +17,8 @@ import argparse
 from sklearn.metrics import (accuracy_score, roc_auc_score,
                              average_precision_score, f1_score,
                              precision_score, recall_score,
-                             confusion_matrix, classification_report)
-from torch.utils.data import DataLoader, Subset
+                             confusion_matrix)
+from torch.utils.data import DataLoader
 
 from src.epi_data_pipeline import EPIGenomicDataset
 from src.dataset import EPIDataset
@@ -26,7 +26,23 @@ from src.model import Kansformer
 from src.encoding import POCD_ND_Encoder
 
 
-def evaluate_split(model, loader, device, split_name="Val"):
+def filter_bengi_files(bengi_dir, cell_names):
+    """Return BENGI file paths matching any of the given cell line names."""
+    all_files = sorted(
+        glob.glob(os.path.join(bengi_dir, '*.tsv.gz')) +
+        glob.glob(os.path.join(bengi_dir, '*.tsv'))
+    )
+    matched = []
+    for f in all_files:
+        basename = os.path.basename(f)
+        for cell in cell_names:
+            if basename.startswith(cell + '.') or basename.startswith(cell + '_'):
+                matched.append(f)
+                break
+    return matched
+
+
+def evaluate_split(model, loader, device, split_name="Test"):
     """Evaluate model on a DataLoader split and print metrics."""
     model.eval()
     all_preds, all_labels = [], []
@@ -86,9 +102,11 @@ def evaluate_split(model, loader, device, split_name="Val"):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate POCD-KansformerEPI")
+    parser = argparse.ArgumentParser(description="Evaluate POCD-KansformerEPI v6")
     parser.add_argument('--config', default='configs/config.yaml', help='Path to config file')
     parser.add_argument('--checkpoint', default=None, help='Path to model checkpoint (default: best)')
+    parser.add_argument('--test-cells', nargs='+', required=True,
+                        help='Cell lines to evaluate on (e.g. HMEC NHEK)')
     parser.add_argument('--device', default=None, help='Device (cuda/cpu)')
     args = parser.parse_args()
 
@@ -97,11 +115,13 @@ def main():
 
     device = torch.device(args.device if args.device else
                           ('cuda' if torch.cuda.is_available() else 'cpu'))
+    save_dir = config['paths']['save_dir']
     print(f"Device: {device}")
     print(f"Config: {args.config}")
+    print(f"Test cell lines: {args.test_cells}")
 
     # Load encoder
-    encoder_path = f"{config['paths']['save_dir']}/encoder.pkl"
+    encoder_path = os.path.join(save_dir, 'encoder.pkl')
     if not os.path.exists(encoder_path):
         print(f"ERROR: Encoder not found at {encoder_path}")
         print("Run train.py first to fit and save the encoder.")
@@ -114,31 +134,31 @@ def main():
     model = Kansformer(config).to(device)
     ckpt_path = args.checkpoint
     if ckpt_path is None:
-        ckpt_path = f"{config['paths']['save_dir']}/model_best.pth"
+        ckpt_path = os.path.join(save_dir, 'model_best.pth')
         if not os.path.exists(ckpt_path):
-            ckpt_path = f"{config['paths']['save_dir']}/model_final.pth"
+            ckpt_path = os.path.join(save_dir, 'model_final.pth')
     model.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=True))
     print(f"Loaded model from {ckpt_path}")
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model params: {total_params:,}")
 
-    # Load data
+    # Load test data (by cell line)
     bengi_dir = config['paths'].get('bengi_dir', './data/BENGI')
     feats_config = config['paths'].get('feats_config', '')
     ref_genome = config['paths'].get('ref_genome', '')
 
-    bengi_files = sorted(
-        glob.glob(os.path.join(bengi_dir, '*.tsv.gz')) +
-        glob.glob(os.path.join(bengi_dir, '*.tsv'))
-    )
-
-    if len(bengi_files) == 0 or not os.path.exists(feats_config):
-        print("ERROR: BENGI data or feats_config not found.")
+    test_bengi = filter_bengi_files(bengi_dir, args.test_cells)
+    if len(test_bengi) == 0:
+        print(f"ERROR: No BENGI files found for test cells {args.test_cells} in {bengi_dir}")
         return
 
-    genomic_ds = EPIGenomicDataset(
-        bengi_paths=bengi_files,
+    print(f"\nTest BENGI files ({len(test_bengi)}):")
+    for f in test_bengi:
+        print(f"  {os.path.basename(f)}")
+
+    test_genomic = EPIGenomicDataset(
+        bengi_paths=test_bengi,
         feats_config_path=feats_config,
         feats_order=config['data'].get('feats_order', None),
         seq_len=config['data'].get('seq_len_bp', 2_500_000),
@@ -148,50 +168,51 @@ def main():
         ref_genome_path=ref_genome if ref_genome else None,
     )
 
-    dataset = EPIDataset(config, encoder, source_dataset=genomic_ds)
-    dataset.augment = False  # No augmentation during evaluation
-
-    chroms = genomic_ds.get_chrom_groups()
-    labels = genomic_ds.get_labels()
-    valid_chroms = config['training'].get('valid_chroms', ['chr11', 'chr17'])
-    test_chroms = config['training'].get('test_chroms', ['chr1', 'chr2'])
-
-    val_idx = [i for i, c in enumerate(chroms) if c in valid_chroms]
-    test_idx = [i for i, c in enumerate(chroms) if c in test_chroms]
-    train_idx = [i for i, c in enumerate(chroms) if c not in valid_chroms and c not in test_chroms]
-
-    print(f"\nTrain: {len(train_idx)}, Val: {len(val_idx)}, Test: {len(test_idx)}")
-    print(f"Val chroms: {valid_chroms}, Test chroms: {test_chroms}")
+    test_dataset = EPIDataset(config, encoder, source_dataset=test_genomic)
+    test_dataset.augment = False
 
     num_workers = config['training'].get('num_workers', 0)
     batch_size = config['data']['batch_size']
 
-    results = {}
+    # Evaluate all test data together
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers)
+    combined_results = evaluate_split(model, test_loader, device,
+                                      f"Test (ALL: {', '.join(args.test_cells)})")
 
-    # Validate
-    if len(val_idx) > 0:
-        val_set = Subset(dataset, val_idx)
-        val_loader = DataLoader(val_set, batch_size=batch_size, num_workers=num_workers)
-        results['val'] = evaluate_split(model, val_loader, device, "Validation")
+    # Evaluate per cell line
+    per_cell_results = {}
+    test_cells_in_data = [s.get("cell", "unknown") for s in test_genomic.samples]
+    unique_cells = sorted(set(test_cells_in_data))
 
-    # Test
-    if len(test_idx) > 0:
-        test_set = Subset(dataset, test_idx)
-        test_loader = DataLoader(test_set, batch_size=batch_size, num_workers=num_workers)
-        results['test'] = evaluate_split(model, test_loader, device, "Test")
+    if len(unique_cells) > 1:
+        print(f"\n{'='*60}")
+        print(f"  PER-CELL-LINE BREAKDOWN")
+        print(f"{'='*60}")
+        for cell in unique_cells:
+            cell_idx = [i for i, c in enumerate(test_cells_in_data) if c == cell]
+            if len(cell_idx) == 0:
+                continue
+            from torch.utils.data import Subset
+            cell_subset = Subset(test_dataset, cell_idx)
+            cell_loader = DataLoader(cell_subset, batch_size=batch_size,
+                                     num_workers=num_workers)
+            per_cell_results[cell] = evaluate_split(model, cell_loader, device,
+                                                     f"Test ({cell})")
 
     # Save results
-    results_path = f"{config['paths']['save_dir']}/eval_results.npz"
-    save_dict = {}
-    for split_name, r in results.items():
-        save_dict[f'{split_name}_predictions'] = r['predictions']
-        save_dict[f'{split_name}_labels'] = r['labels']
-        save_dict[f'{split_name}_auroc'] = r['auroc']
-        save_dict[f'{split_name}_aupr'] = r['aupr']
+    results_path = os.path.join(save_dir, 'eval_results.npz')
+    save_dict = {
+        'test_predictions': combined_results['predictions'],
+        'test_labels': combined_results['labels'],
+        'test_auroc': combined_results['auroc'],
+        'test_aupr': combined_results['aupr'],
+        'test_cells': args.test_cells,
+    }
+    for cell, r in per_cell_results.items():
+        save_dict[f'{cell}_predictions'] = r['predictions']
+        save_dict[f'{cell}_labels'] = r['labels']
+        save_dict[f'{cell}_auroc'] = r['auroc']
+        save_dict[f'{cell}_aupr'] = r['aupr']
     np.savez(results_path, **save_dict)
     print(f"\nResults saved to {results_path}")
     print("\nEvaluation Complete.")
-
-
-if __name__ == '__main__':
-    main()
