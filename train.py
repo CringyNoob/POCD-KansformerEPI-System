@@ -25,6 +25,12 @@ from src.dataset import EPIDataset
 from src.model import Kansformer
 from src.encoding import POCD_ND_Encoder
 from src.visualize import plot_history
+import sys as _sys; _sys.path.insert(0, r"E:\AI Models")
+from comprehensive_metrics import compute_all_metrics, format_metrics_report
+def _print_all_metrics(labels, probs, preds=None, bce=None, mse=None, frob=None, prefix="", is_multilabel=False):
+    m = compute_all_metrics(labels, probs, preds, bce_loss_val=bce, mse_loss_val=mse, frob_loss_val=frob, is_multilabel=is_multilabel)
+    print(format_metrics_report(m, prefix=prefix))
+    return m
 
 
 def parse_args():
@@ -421,6 +427,8 @@ def main():
         yaml.dump(config_snapshot, f, default_flow_style=False)
 
     print("\nTraining Complete.")
+    print("\n=== Comprehensive Final Metrics ===")
+    print("  (Run evaluate.py for full 11-metric test report)")
 
 
 if __name__ == '__main__':

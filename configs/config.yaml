@@ -4,7 +4,7 @@ paths:
   save_dir: "./output"
   bengi_dir: "./data/BENGI"
   feats_config: "./data/genomic_data/CTCF_DNase_6histone_local.500.json"
-  ref_genome: "../Loco EPI-main/hg19.fa"
+  ref_genome: "./data/hg19.fa"
 
 data:
   sequence_length: 6000   # 3000bp enhancer + 3000bp promoter concatenated

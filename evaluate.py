@@ -80,6 +80,12 @@ def evaluate_split(model, loader, device, split_name="Test"):
     print(f"{'='*50}")
     print(f"  Accuracy:  {acc:.4f}")
     print(f"  AUROC:     {auc:.4f}")
+
+    print("\n=== Comprehensive Test Metrics ===")
+    try:
+        _print_all_metrics(all_labels, all_probs, prefix="[Test]")
+    except:
+        print("  (Metrics variables not in expected format)")
     print(f"  AUPR:      {aupr:.4f}")
     print(f"  F1 Score:  {f1:.4f}")
     print(f"  Precision: {prec:.4f}")
@@ -193,6 +199,12 @@ def main():
             if len(cell_idx) == 0:
                 continue
             from torch.utils.data import Subset
+import sys as _sys; _sys.path.insert(0, r"E:\AI Models")
+from comprehensive_metrics import compute_all_metrics, format_metrics_report
+def _print_all_metrics(labels, probs, preds=None, bce=None, mse=None, frob=None, prefix="", is_multilabel=False):
+    m = compute_all_metrics(labels, probs, preds, bce_loss_val=bce, mse_loss_val=mse, frob_loss_val=frob, is_multilabel=is_multilabel)
+    print(format_metrics_report(m, prefix=prefix))
+    return m
             cell_subset = Subset(test_dataset, cell_idx)
             cell_loader = DataLoader(cell_subset, batch_size=batch_size,
                                      num_workers=num_workers)
