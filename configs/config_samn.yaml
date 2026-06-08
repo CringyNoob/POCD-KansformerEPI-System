@@ -1,0 +1,72 @@
+experiment_name: "SAMN_EPI_v1"
+
+paths:
+  save_dir: "./output_samn"
+  bengi_dir: "./data/BENGI"
+  feats_config: "./data/genomic_data/CTCF_DNase_6histone_local.500.json"
+  ref_genome: "./data/hg19.fa"
+
+data:
+  sequence_length: 6000   # 3000bp enhancer + 3000bp promoter concatenated
+  epigenetic_bins: 5000   # 2.5Mbp window / 500bp = 5000 bins
+  n_epigenetic_features: 9  # 1 pos_enc + CTCF + DNase + 6 histone marks
+  kmer_size: 3
+  batch_size: 64          # 5070 Ti 12GB VRAM can handle 64 easily
+  bin_size: 500
+  seq_len_bp: 2500000
+  enhancer_window: 3000
+  promoter_window: 3000
+  encoder_fit_samples: 5000
+  feats_order:
+    - "CTCF"
+    - "DNase"
+    - "H3K27ac"
+    - "H3K27me3"
+    - "H3K36me3"
+    - "H3K4me1"
+    - "H3K4me3"
+    - "H3K9me3"
+
+model:
+  hidden_dim: 180          # d_model — shared by CNN/BiLSTM/SAMN
+  num_heads: 6             # 180/6 = 30 per head
+  n_tokens: 128            # Sequence branch tokens
+  dropout: 0.1
+  head_dropout: 0.2
+
+  # SAMN-specific hyperparameters
+  samn:
+    num_layers: 4           # 4 focus-bin blocks (more depth for routing)
+    local_window: 64        # ±32 tokens local attention radius
+    bin_slots: 16           # Ancestral memory capacity
+    bin_dim: 96             # Compressed memory dimension
+    survivors_per_layer: 8  # Top-8 tokens survive into memory per layer
+    ffn_multiplier: 4       # FFN hidden = 4 × d_model = 720
+    gate_temperature: 1.0   # Softmax temperature for survival gate
+    novelty_weight: 0.35    # Weight for novelty score in survival
+    prediction_error_weight: 0.20  # Weight for prediction error in survival
+    bin_decay: 0.92         # Decay factor for aged memory slots
+    bin_update: "gru"       # Memory update mechanism: gru/fifo/attention
+
+training:
+  lr: 0.0001               # 1e-4 (matches reference)
+  epochs: 5                # Start small, increase if needed
+  lambda_dist: 1.0         # Distance regression loss weight
+  grad_clip: 1.0
+  patience: 15
+  num_workers: 4           # Ryzen 7 7700X can handle 4 workers
+  weight_decay: 0.0001     # Light L2 regularization
+  use_cosine_scheduler: false
+  entropy_loss_weight: 0.01      # SAMN gate entropy regularization
+  diversity_loss_weight: 0.05    # SAMN slot diversity penalty
+  use_amp: true                  # Mixed precision for 5070 Ti
+  # Chromosome-based validation split
+  valid_chroms:
+    - "chr11"
+    - "chr17"
+
+augmentation:
+  enabled: true
+  rc_prob: 0.5
+  epi_noise_std: 0.05
+  shift_max_bins: 3
