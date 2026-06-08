@@ -6,9 +6,16 @@ class Interpreter:
         self.grads = None
         self.acts = None
 
-    def get_cam(self, seq, epi):
+    def get_cam(self, seq, epi, enh_idx=None, prom_idx=None):
         self.model.eval()
-        
+        device = next(self.model.parameters()).device
+
+        # Default indices to midpoint if not provided
+        if enh_idx is None:
+            enh_idx = torch.tensor([2500.0], device=device)
+        if prom_idx is None:
+            prom_idx = torch.tensor([2500.0], device=device)
+
         # Hook into Sequence CNN
         target_layer = self.model.seq_cnn[4] # The second Conv1d
         
@@ -19,7 +26,9 @@ class Interpreter:
         h2 = target_layer.register_full_backward_hook(bwd_hook)
         
         # Inference
-        out, _, _ = self.model(seq.unsqueeze(0), epi.unsqueeze(0))
+        out, _, _ = self.model(
+            seq.unsqueeze(0), epi.unsqueeze(0),
+            enh_idx.unsqueeze(0), prom_idx.unsqueeze(0))
         
         # Backward
         self.model.zero_grad()

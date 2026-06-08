@@ -130,8 +130,8 @@ class SelfAttentionPooling(nn.Module):
     def __init__(self, d_model, da=64, r=32):
         super().__init__()
         self.r = r
-        self.ws1 = nn.Linear(d_model, da, bias=False)
-        self.ws2 = nn.Linear(da, r, bias=False)
+        self.ws1 = nn.Linear(d_model, da, bias=True)
+        self.ws2 = nn.Linear(da, r, bias=True)
 
     def forward(self, H):
         A = torch.softmax(self.ws2(torch.tanh(self.ws1(H))), dim=1)  # (B, S, r)
