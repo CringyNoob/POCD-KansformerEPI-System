@@ -161,15 +161,16 @@ class EPIGenomicDataset(Dataset):
             for ch, sz in HG19_CHROMSIZE.items()
         }
 
-        # Reference genome (optional)
+        # Reference genome (optional). Store the path and open lazily: pyfaidx
+        # holds an open file handle (_io.BufferedReader) that cannot be pickled,
+        # which would break multi-worker DataLoaders on Windows (spawn). Each
+        # process (main + every worker) opens its own handle on first use.
+        self.ref_genome_path = (
+            ref_genome_path if (ref_genome_path and os.path.exists(ref_genome_path)) else None
+        )
         self.ref_genome = None
-        if ref_genome_path and os.path.exists(ref_genome_path):
-            try:
-                import pyfaidx
-                self.ref_genome = pyfaidx.Fasta(ref_genome_path)
-                print(f"  Reference genome loaded: {ref_genome_path}")
-            except ImportError:
-                print("  WARNING: pyfaidx not installed – using dummy sequences")
+        if self.ref_genome_path:
+            self._open_ref_genome(verbose=True)
 
         # Storage
         self.samples: List[dict] = []
@@ -178,6 +179,31 @@ class EPIGenomicDataset(Dataset):
         self._load_datasets()
         print(f"  EPIGenomicDataset ready: {len(self.samples)} samples, "
               f"{self.num_feats} marks, {self.num_bins} bins")
+
+    # ---------------------------------------------------------------
+    def _open_ref_genome(self, verbose: bool = False):
+        """Open the pyfaidx FASTA handle for this process (idempotent)."""
+        if self.ref_genome is not None or not self.ref_genome_path:
+            return
+        try:
+            import pyfaidx
+            self.ref_genome = pyfaidx.Fasta(self.ref_genome_path)
+            if verbose:
+                print(f"  Reference genome loaded: {self.ref_genome_path}")
+        except ImportError:
+            if verbose:
+                print("  WARNING: pyfaidx not installed – using dummy sequences")
+            self.ref_genome_path = None
+
+    def __getstate__(self):
+        # Drop the unpicklable open FASTA handle; workers reopen lazily.
+        state = self.__dict__.copy()
+        state["ref_genome"] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.ref_genome = None  # reopened on first sequence access in this process
 
     # ---------------------------------------------------------------
     def _load_datasets(self):
@@ -328,6 +354,8 @@ class EPIGenomicDataset(Dataset):
         half = window // 2
         start = max(0, center - half)
         end = start + window
+        if self.ref_genome is None and self.ref_genome_path is not None:
+            self._open_ref_genome()  # lazily reopen per-process (worker)
         if self.ref_genome is not None:
             try:
                 chrom_rec = self.ref_genome[chrom]

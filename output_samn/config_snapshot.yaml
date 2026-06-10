@@ -31,33 +31,44 @@ data:
   promoter_window: 3000
   seq_len_bp: 2500000
   sequence_length: 6000
-experiment_name: POCD_Kansformer_v6
+experiment_name: SAMN_EPI_v1
 model:
-  att_penalty: 0.1
   dropout: 0.1
   head_dropout: 0.2
   hidden_dim: 180
-  kan_hidden: 64
   n_tokens: 128
   num_heads: 6
-  num_layers: 3
-  sa_da: 64
-  sa_r: 32
+  samn:
+    bin_decay: 0.92
+    bin_dim: 96
+    bin_slots: 16
+    bin_update: gru
+    ffn_multiplier: 4
+    gate_temperature: 1.0
+    local_window: 64
+    novelty_weight: 0.35
+    num_layers: 4
+    prediction_error_weight: 0.2
+    survivors_per_layer: 8
 paths:
   bengi_dir: ./data/BENGI
   feats_config: ./data/genomic_data/CTCF_DNase_6histone_local.500.json
   ref_genome: ./data/hg19.fa
-  save_dir: ./output
+  save_dir: ./output_samn
 training:
-  att_penalty_coeff: 0.1
+  diversity_loss_weight: 0.05
+  entropy_loss_weight: 0.01
   epochs: 5
   grad_clip: 1.0
   lambda_dist: 1.0
   lr: 0.0001
-  num_workers: 0
+  num_workers: 4
   patience: 15
+  persistent_workers: false
+  prefetch_factor: 2
+  use_amp: true
   use_cosine_scheduler: false
   valid_chroms:
   - chr11
   - chr17
-  weight_decay: 0
+  weight_decay: 0.0001

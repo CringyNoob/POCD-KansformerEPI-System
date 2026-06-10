@@ -8,11 +8,16 @@ Usage:
     python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
     python train_samn.py --config configs/config_samn.yaml --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
 """
+import os
+# Reduce CUDA fragmentation so large batches fit on 16 GB. Must be set before
+# torch initializes the CUDA caching allocator (i.e. before the first import).
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 import yaml
 import os
 import glob
@@ -191,13 +196,20 @@ def main():
     if device.type != "cuda":
         use_amp = False
 
+    # GPU throughput flags (Blackwell RTX 5070 Ti). Input shapes are fixed
+    # (drop_last on train) so cuDNN autotune pays off; TF32 speeds fp32 matmul/LSTM paths.
+    if device.type == "cuda":
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+
     print("=" * 70)
     print("  SAMN-EPI: Selective Ancestral Memory Network for EPI Prediction")
     print("=" * 70)
     print(f"  Device:        {device}")
     if device.type == "cuda":
         print(f"  GPU:           {torch.cuda.get_device_name(0)}")
-        print(f"  VRAM:          {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+        print(f"  VRAM:          {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
     print(f"  Mixed Prec:    {'ON' if use_amp else 'OFF'}")
     print(f"  Config:        {args.config}")
     print()
@@ -314,16 +326,26 @@ def main():
           f"neg: {n_neg} ({100*n_neg/len(train_labels_arr):.1f}%)")
 
     # ─── DataLoaders ───
-    num_workers = config["training"].get("num_workers", 4)
+    num_workers = config["training"].get("num_workers", 8)
     batch_size = config["data"]["batch_size"]
+    prefetch = config["training"].get("prefetch_factor", 2)
+    persistent = config["training"].get("persistent_workers", True) and num_workers > 0
+
+    # persistent_workers avoids re-pickling the ~760MB dataset into workers every
+    # epoch on Windows spawn — the single biggest win for these short runs.
+    common = dict(num_workers=num_workers, pin_memory=True)
+    if num_workers > 0:
+        common["prefetch_factor"] = prefetch
+        common["persistent_workers"] = persistent
+
+    # val runs every epoch but is small (chr11+chr17) → fewer workers to bound RAM
+    val_common = dict(common)
+    val_common["num_workers"] = min(4, num_workers)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True,
-                              num_workers=num_workers, drop_last=True,
-                              pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size,
-                            num_workers=num_workers, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size,
-                             num_workers=num_workers, pin_memory=True)
+                              drop_last=True, **common)
+    val_loader = DataLoader(val_set, batch_size=batch_size, **val_common)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, **val_common)
 
     # ─── Model ───
     model = SAMNKansformerEPI(config).to(device)
@@ -350,7 +372,7 @@ def main():
     entropy_weight = config["training"].get("entropy_loss_weight", 0.01)
     diversity_weight = config["training"].get("diversity_loss_weight", 0.05)
 
-    scaler = GradScaler(enabled=use_amp)
+    scaler = GradScaler("cuda", enabled=use_amp)
 
     total_params = sum(p.numel() for p in model.parameters())
     train_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -555,7 +577,7 @@ def main():
                 continue
             cell_subset = Subset(test_dataset, cell_idx)
             cell_loader = DataLoader(cell_subset, batch_size=batch_size,
-                                     num_workers=num_workers, pin_memory=True)
+                                     num_workers=min(4, num_workers), pin_memory=True)
             cell_res = evaluate_loader(
                 model, cell_loader, device, crit_cls, crit_reg, lambda_dist,
                 use_amp=use_amp)

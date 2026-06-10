@@ -28,7 +28,7 @@ from sklearn.metrics import (accuracy_score, roc_auc_score,
                              confusion_matrix, matthews_corrcoef,
                              roc_curve, precision_recall_curve)
 from torch.utils.data import DataLoader, Subset
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 
 from src.epi_data_pipeline import EPIGenomicDataset
 from src.dataset import EPIDataset
