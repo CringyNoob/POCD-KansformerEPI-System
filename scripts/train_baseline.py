@@ -1,12 +1,12 @@
 """
-POCD-KansformerEPI v6 — Cell-Line Training Script
+Baseline (POCD-KansformerEPI) — Cell-Line Training Script
 
 Trains on samples from selected cell lines, validates on held-out chromosomes
 within those cell lines, and tests on entirely separate cell lines.
 
 Usage:
-    python train.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
-    python train.py --config configs/config.yaml --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 100 --patience 15
+    python scripts/train_baseline.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+    python scripts/train_baseline.py --config configs/baseline.yaml --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 100 --patience 15
 """
 import torch
 import torch.nn as nn
@@ -20,13 +20,16 @@ import numpy as np
 import pickle
 from sklearn.metrics import accuracy_score, roc_auc_score, average_precision_score
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.epi_data_pipeline import EPIGenomicDataset
 from src.dataset import EPIDataset
-from src.model import Kansformer
+from src.baseline_model import Kansformer
 from src.encoding import POCD_ND_Encoder
 from src.visualize import plot_history
-import sys as _sys; _sys.path.insert(0, r"E:\AI Models")
-from comprehensive_metrics import compute_all_metrics, format_metrics_report
+from src.metrics import compute_all_metrics, format_metrics_report
 def _print_all_metrics(labels, probs, preds=None, bce=None, mse=None, frob=None, prefix="", is_multilabel=False):
     m = compute_all_metrics(labels, probs, preds, bce_loss_val=bce, mse_loss_val=mse, frob_loss_val=frob, is_multilabel=is_multilabel)
     print(format_metrics_report(m, prefix=prefix))
@@ -35,8 +38,8 @@ def _print_all_metrics(labels, probs, preds=None, bce=None, mse=None, frob=None,
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Train POCD-KansformerEPI v6 on individual cell lines")
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
+        description="Train the baseline POCD-KansformerEPI on individual cell lines")
+    parser.add_argument('--config', type=str, default='configs/baseline.yaml',
                         help='Path to config YAML')
     parser.add_argument('--train-cells', nargs='+', required=True,
                         help='Cell lines to train on (e.g. GM12878 HeLa K562 IMR90)')

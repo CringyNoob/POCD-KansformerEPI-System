@@ -5,9 +5,9 @@ Loads a trained SAMN-EPI checkpoint and evaluates on specified test cell lines.
 Generates ROC/PR curves, confusion matrices, and per-cell-line breakdowns.
 
 Usage:
-    python evaluate_samn.py --test-cells HMEC NHEK
-    python evaluate_samn.py --test-cells HMEC NHEK --checkpoint output_samn/samn_model_best.pth
-    python evaluate_samn.py --config configs/config_samn.yaml --test-cells HMEC NHEK
+    python scripts/evaluate_samn.py --test-cells HMEC NHEK
+    python scripts/evaluate_samn.py --test-cells HMEC NHEK --checkpoint results/samn/samn_model_best.pth
+    python scripts/evaluate_samn.py --config configs/samn.yaml --test-cells HMEC NHEK
 """
 import torch
 import yaml
@@ -27,6 +27,10 @@ from sklearn.metrics import (accuracy_score, roc_auc_score,
                              roc_curve, precision_recall_curve)
 from torch.utils.data import DataLoader, Subset
 from torch.amp import autocast
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.epi_data_pipeline import EPIGenomicDataset
 from src.dataset import EPIDataset
@@ -162,7 +166,7 @@ def save_curves(labels, preds, save_dir, prefix=""):
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate SAMN-EPI model")
-    parser.add_argument("--config", default="configs/config_samn.yaml")
+    parser.add_argument("--config", default="configs/samn.yaml")
     parser.add_argument("--checkpoint", default=None,
                         help="Path to model checkpoint (default: best)")
     parser.add_argument("--test-cells", nargs="+", required=True,

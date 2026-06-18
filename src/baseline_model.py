@@ -146,14 +146,14 @@ class SelfAttentionPooling(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# POCD-KansformerEPI v6 — Dual-branch with enh/prom index feature extraction
+# POCD-KansformerEPI baseline — Dual-branch with enh/prom index feature extraction
 #
-# Key changes vs v5:
-#   1. Epi CNN: single layer + MaxPool1d(10) → 500 tokens (was 2-layer → 128)
-#   2. Epi BiLSTM: added (matches reference)
+# Architecture notes:
+#   1. Epi CNN: single layer + MaxPool1d(10) → 500 tokens
+#   2. Epi BiLSTM (matches reference)
 #   3. Enh/prom index extraction from transformer output (like reference)
-#   4. FC head input: 4*d_model=720 (was 2*d_model=360)
-#   5. Total tokens: 128 seq + 500 epi = 628 (was 256)
+#   4. FC head input: 4*d_model=720
+#   5. Total tokens: 128 seq + 500 epi = 628
 # ---------------------------------------------------------------------------
 class Kansformer(nn.Module):
     def __init__(self, config):

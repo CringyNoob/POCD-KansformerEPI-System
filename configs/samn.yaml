@@ -1,7 +1,7 @@
-experiment_name: "SAMN_EPI_v1"
+experiment_name: "samn"
 
 paths:
-  save_dir: "./output_samn"
+  save_dir: "./results/samn"
   bengi_dir: "./data/BENGI"
   feats_config: "./data/genomic_data/CTCF_DNase_6histone_local.500.json"
   ref_genome: "./data/hg19.fa"

@@ -1,0 +1,13 @@
+# Core
+torch>=2.0
+numpy
+pyyaml
+scikit-learn
+
+# Plotting
+matplotlib
+seaborn
+
+# Reference-genome reading (optional; the sequence branch falls back to
+# dummy sequences if a reference genome / pyfaidx is unavailable)
+pyfaidx

@@ -17,9 +17,9 @@ approximation while adding SAMN's **noise-filtering local attention** and
 | File | Purpose |
 |------|---------|
 | `src/samn_kan_model.py` | Hybrid SAMN-KAN model (4,251,155 params) |
-| `configs/config_samn_kan.yaml` | Configuration (5 epochs, patience 15) |
-| `train_samn_kan.py` | Training script (same phases as base model) |
-| `evaluate_samn_kan.py` | Evaluation script (same metrics as base model) |
+| `configs/samn_kan.yaml` | Configuration (5 epochs, patience 15) |
+| `scripts/train_samn_kan.py` | Training script (same phases as base model) |
+| `scripts/evaluate_samn_kan.py` | Evaluation script (same metrics as base model) |
 | `test_samn_kan_smoke.py` | Smoke test (forward + backward pass) |
 
 ## Prerequisites
@@ -37,13 +37,13 @@ Required packages (should already be installed from base model):
 
 ### Quick Start
 ```powershell
-python train_samn_kan.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+python scripts/train_samn_kan.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
 ```
 
 ### Full Command with All Options
 ```powershell
-python train_samn_kan.py `
-    --config configs/config_samn_kan.yaml `
+python scripts/train_samn_kan.py `
+    --config configs/samn_kan.yaml `
     --train-cells GM12878 HeLa K562 IMR90 `
     --test-cells HMEC NHEK `
     --epochs 5 `
@@ -67,7 +67,7 @@ python train_samn_kan.py `
 
 ### Output Files
 
-After training, `output_samn_kan/` will contain:
+After training, `results/samn_kan/` will contain:
 
 | File | Description |
 |------|-------------|
@@ -86,8 +86,8 @@ After training, `output_samn_kan/` will contain:
 
 To re-evaluate a trained model:
 ```powershell
-python evaluate_samn_kan.py --test-cells HMEC NHEK
-python evaluate_samn_kan.py --test-cells HMEC NHEK --checkpoint output_samn_kan/model_best.pth
+python scripts/evaluate_samn_kan.py --test-cells HMEC NHEK
+python scripts/evaluate_samn_kan.py --test-cells HMEC NHEK --checkpoint results/samn_kan/model_best.pth
 ```
 
 ## Metrics Reported (Matching Base Model)
@@ -116,16 +116,16 @@ To run all three models for comparison:
 
 ```powershell
 # 1. Base Kansformer (if not already trained)
-python train.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 5 --patience 15
+python scripts/train_baseline.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 5 --patience 15
 
 # 2. Pure SAMN-EPI
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
 
 # 3. Hybrid SAMN-KAN-EPI
-python train_samn_kan.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+python scripts/train_samn_kan.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
 ```
 
-Results will be in: `output/`, `output_samn/`, `output_samn_kan/`
+Results will be in: `results/baseline/`, `results/samn/`, `results/samn_kan/`
 
 ## Model Comparison Summary
 
@@ -140,7 +140,7 @@ Results will be in: `output/`, `output_samn/`, `output_samn_kan/`
 
 ## Hyperparameter Tuning
 
-Key hyperparameters in `configs/config_samn_kan.yaml`:
+Key hyperparameters in `configs/samn_kan.yaml`:
 
 ```yaml
 # SAMN attention (new)

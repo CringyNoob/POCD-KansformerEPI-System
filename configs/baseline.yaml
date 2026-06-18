@@ -1,7 +1,7 @@
-experiment_name: "POCD_Kansformer_v6"
+experiment_name: "baseline"
 
 paths:
-  save_dir: "./output"
+  save_dir: "./results/baseline"
   bengi_dir: "./data/BENGI"
   feats_config: "./data/genomic_data/CTCF_DNase_6histone_local.500.json"
   ref_genome: "./data/hg19.fa"

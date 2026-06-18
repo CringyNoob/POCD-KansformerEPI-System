@@ -19,20 +19,31 @@ Combines **POCD-ND** DNA sequence encoding with pre-processed **epigenetic signa
 
 ```
 POCD-KansformerEPI/
-├── configs/
-│   └── config.yaml              # All hyperparameters and data paths
-├── src/
-│   ├── epi_data_pipeline.py     # Reads BENGI TSVs + .pt epigenetic signals
-│   ├── dataset.py               # PyTorch Dataset with POCD-ND encoding
-│   ├── encoding.py              # POCD-ND Encoder (k-mer density matrices)
-│   ├── model.py                 # Kansformer architecture (dual-branch)
-│   ├── model_layers.py          # KANLinear layer (SiLU spline approximation)
-│   ├── interpretation.py        # Grad-CAM on sequence CNN
-│   └── visualize.py             # Loss curves & CAM plotting
-├── train.py                     # Training script (auto-detects real vs synthetic data)
-├── evaluate.py                  # Load model & generate CAM interpretation
-├── vertex_ai_training.ipynb     # Step-by-step Vertex AI notebook
-├── checkpoints/                 # Saved models, encoder, plots
+├── configs/                       # One YAML per stage
+│   ├── baseline.yaml
+│   ├── samn.yaml
+│   └── samn_kan.yaml
+├── src/                           # Shared library code
+│   ├── epi_data_pipeline.py       # Reads BENGI TSVs + .pt epigenetic signals
+│   ├── dataset.py                 # PyTorch Dataset with POCD-ND encoding
+│   ├── encoding.py                # POCD-ND Encoder (k-mer density matrices)
+│   ├── baseline_model.py          # Kansformer architecture (dual-branch)
+│   ├── samn_model.py              # SAMN architecture
+│   ├── samn_kan_model.py          # SAMN + KAN hybrid architecture
+│   ├── model_layers.py            # KANLinear / KAN layers
+│   ├── metrics.py                 # Shared evaluation metrics
+│   ├── interpretation.py          # Grad-CAM on sequence CNN
+│   └── visualize.py               # Loss curves & CAM plotting
+├── scripts/                       # Train / evaluate entry points per stage
+│   ├── train_baseline.py          evaluate_baseline.py
+│   ├── train_samn.py              evaluate_samn.py
+│   └── train_samn_kan.py          evaluate_samn_kan.py
+├── results/                       # Outputs per stage (checkpoints, plots, metrics)
+│   ├── baseline/
+│   ├── samn/
+│   └── samn_kan/
+├── tests/                         # Smoke tests
+├── docs/                          # Per-stage guides + dataset notes
 └── requirements.txt
 ```
 
@@ -111,109 +122,35 @@ Must contain:
 - **`genomic_data/`** folder — JSON config files that map cell line → mark → `.pt` filename
 
 ### 3. (Optional) hg19 Reference Genome
-Downloaded automatically on Vertex AI (~3 GB). Enables real DNA sequences for the sequence branch. Without it, the model trains on **epigenetic features only** (sequence branch receives N-padded dummy input — model still works, just single-branch effectively).
+Downloaded separately (~3 GB) and pointed to via `ref_genome` in the config. Enables real DNA sequences for the sequence branch. Without it, the model trains on **epigenetic features only** (sequence branch receives N-padded dummy input — model still works, just single-branch effectively).
 
 ---
 
-## How to Create the Zip Files
+## Usage
 
-### On your local machine:
+The project has three model stages that share the same data pipeline. Run all
+commands from the repository root. Each stage has its own config, scripts, and
+`results/` directory, plus a guide under [docs/](docs/).
 
-**Step 1 — Zip the project code:**
-1. Open your terminal or file explorer and navigate to the parent directory of `POCD-KansformerEPI/`.
-2. Compress the `POCD-KansformerEPI` folder to a ZIP archive.
-3. Result: `POCD-KansformerEPI.zip`
+| Stage | Train | Evaluate | Guide |
+|---|---|---|---|
+| Baseline (Kansformer) | `python scripts/train_baseline.py` | `python scripts/evaluate_baseline.py` | [docs/baseline.md](docs/baseline.md) |
+| SAMN | `python scripts/train_samn.py` | `python scripts/evaluate_samn.py` | [docs/samn.md](docs/samn.md) |
+| SAMN-KAN | `python scripts/train_samn_kan.py` | `python scripts/evaluate_samn_kan.py` | [docs/samn_kan.md](docs/samn_kan.md) |
 
-**Step 2 — Zip the .pt files:**
-1. Navigate to your epigenetic signal `processed/` directory.
-2. Select all 48 `.pt` files.
-3. Compress them to a ZIP file.
-4. Rename the archive to `processed.zip`
+Example (baseline):
 
-**Step 3 — Zip the kansformer data:**
-1. Navigate to the Kansformer `data/` directory (contains `BENGI/` and `genomic_data/`).
-3. Right-click → **Compress to ZIP file**
-4. Rename to `kansformer.zip`
+```bash
+python scripts/train_baseline.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+python scripts/evaluate_baseline.py --test-cells HMEC NHEK
+```
 
----
+Smoke tests (no data required):
 
-## Vertex AI Training — Step by Step
-
-### Prerequisites
-- Google Cloud account with Vertex AI Workbench enabled
-- **g2-standard-16** instance (1× NVIDIA L4, 16 vCPUs, 64 GB RAM)
-- The 3 zip files ready on your PC
-
-### Step-by-Step Instructions
-
-#### 1. Create the Vertex AI Notebook Instance
-1. Go to [Google Cloud Console](https://console.cloud.google.com/) → **Vertex AI** → **Workbench**
-2. Click **Create New** → **Instances**
-3. Settings:
-   - Name: `pocd-kansformer`
-   - Region: pick the closest one to you
-   - Machine type: **g2-standard-16**
-   - GPU: **1× NVIDIA L4** (auto-selected with g2)
-   - Boot disk: at least **100 GB** SSD
-   - Framework: **PyTorch 2.x** (or plain Python — we install requirements anyway)
-4. Click **Create** — wait ~3-5 minutes for it to boot
-
-#### 2. Upload the 3 Zip Files
-1. Click **Open JupyterLab** on your instance
-2. In JupyterLab, click the **Upload** button (top-left of file browser)
-3. Upload these one at a time:
-   - `POCD-KansformerEPI.zip` (~1 MB)
-   - `processed.zip` (~1.1 GB — may take a few minutes)
-   - `kansformer.zip` (~50 MB)
-4. Wait for all uploads to complete
-
-#### 3. Open and Run the Notebook
-1. After upload, the zip files appear in `/home/jupyter/`
-2. Navigate into `POCD-KansformerEPI.zip` will be unzipped by the notebook
-3. Or, open a **Terminal** in JupyterLab and run:
-   ```bash
-   cd ~
-   unzip -qo POCD-KansformerEPI.zip
-   ```
-4. In JupyterLab file browser, navigate to `POCD-KansformerEPI/`
-5. Open **`vertex_ai_training.ipynb`**
-6. Select kernel: **Python 3 (ipykernel)** (or Python 3 with PyTorch)
-
-#### 4. Run Cells in Order
-The notebook has **10 steps** — run each cell sequentially:
-
-| Step | What It Does | Time |
-|------|-------------|------|
-| **Step 0** | Instructions (already done) | — |
-| **Step 1** | Unzips files, arranges `data/BENGI/` and `data/genomic_data/processed/` | ~1 min |
-| **Step 2** | `pip install -r requirements.txt` | ~2 min |
-| **Step 3** | *(Optional)* Downloads hg19 reference genome (3 GB) | ~5 min |
-| **Step 4** | Updates `config.yaml` paths for Vertex AI | instant |
-| **Step 5** | Verifies data pipeline — loads 1 BENGI file, checks shapes | ~30 sec |
-| **Step 6** | **Trains the model** (50 epochs, early stopping at patience=10) | ~2-4 hours |
-| **Step 7** | Plots training/validation loss curves | instant |
-| **Step 8** | Evaluates best model — Accuracy, AUROC, AUPR, F1, confusion matrix, ROC/PR curves | ~5 min |
-| **Step 9** | CAM interpretation on a positive sample | ~10 sec |
-| **Step 10** | Lists checkpoint files for download | instant |
-
-#### 5. Download Results
-After training completes:
-1. In JupyterLab file browser, navigate to `POCD-KansformerEPI/checkpoints/`
-2. Right-click → **Download** each file:
-   - `model_best.pth` — best model weights
-   - `model_final.pth` — final epoch weights
-   - `encoder.pkl` — fitted POCD-ND encoder
-   - `loss.png` — training curves
-   - `eval_curves.png` — ROC and PR curves
-   - `cam_positive_sample.png` — CAM interpretation
-
-#### 6. Stop the Instance
-**Important** — to avoid charges:
-1. Go back to Vertex AI Workbench in Cloud Console
-2. Select your instance → click **Stop**
-3. You can restart it later and your files will still be there
-
----
+```bash
+python tests/test_samn_smoke.py
+python tests/test_samn_kan_smoke.py
+```
 
 ## Training Details
 
@@ -247,7 +184,7 @@ The code auto-detects whether real data is present. Without BENGI files, it fall
 ```bash
 cd POCD-KansformerEPI
 pip install -r requirements.txt
-python train.py    # Runs with 200 synthetic samples
+python scripts/train_baseline.py    # Runs with 200 synthetic samples
 ```
 
 ## Citation

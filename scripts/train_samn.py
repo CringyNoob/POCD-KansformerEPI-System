@@ -5,8 +5,8 @@ Trains the SAMN-based EPI model on selected cell lines and evaluates on
 held-out cell lines. Replaces the KANTransformer training pipeline.
 
 Usage:
-    python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
-    python train_samn.py --config configs/config_samn.yaml --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+    python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+    python scripts/train_samn.py --config configs/samn.yaml --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
 """
 import os
 # Reduce CUDA fragmentation so large batches fit on 16 GB. Must be set before
@@ -35,6 +35,10 @@ from sklearn.metrics import (accuracy_score, roc_auc_score,
                              matthews_corrcoef, confusion_matrix,
                              roc_curve, precision_recall_curve)
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.epi_data_pipeline import EPIGenomicDataset
 from src.dataset import EPIDataset
 from src.samn_model import SAMNKansformerEPI
@@ -45,7 +49,7 @@ from src.visualize import plot_history
 def parse_args():
     p = argparse.ArgumentParser(
         description="Train SAMN-EPI (cross-cell-line)")
-    p.add_argument("--config", type=str, default="configs/config_samn.yaml",
+    p.add_argument("--config", type=str, default="configs/samn.yaml",
                    help="Path to config YAML")
     p.add_argument("--train-cells", nargs="+", required=True,
                    help="Cell lines to train on (e.g. GM12878 HeLa K562 IMR90)")

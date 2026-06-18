@@ -1,11 +1,11 @@
 """
-Standalone evaluation script for POCD-KansformerEPI v6.
+Standalone evaluation script for the baseline POCD-KansformerEPI model.
 Loads the best checkpoint and evaluates on specified test cell lines.
 
 Usage:
-    python evaluate.py --test-cells HMEC NHEK
-    python evaluate.py --test-cells HMEC NHEK --checkpoint output/model_best.pth
-    python evaluate.py --config configs/config.yaml --test-cells HMEC NHEK
+    python scripts/evaluate_baseline.py --test-cells HMEC NHEK
+    python scripts/evaluate_baseline.py --test-cells HMEC NHEK --checkpoint results/baseline/model_best.pth
+    python scripts/evaluate_baseline.py --config configs/baseline.yaml --test-cells HMEC NHEK
 """
 import torch
 import yaml
@@ -20,14 +20,15 @@ from sklearn.metrics import (accuracy_score, roc_auc_score,
                              confusion_matrix)
 from torch.utils.data import DataLoader
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.epi_data_pipeline import EPIGenomicDataset
 from src.dataset import EPIDataset
-from src.model import Kansformer
+from src.baseline_model import Kansformer
 from src.encoding import POCD_ND_Encoder
-
-import sys as _sys
-_sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from comprehensive_metrics import compute_all_metrics, format_metrics_report
+from src.metrics import compute_all_metrics, format_metrics_report
 
 
 def _print_all_metrics(labels, probs, preds=None, bce=None, mse=None, frob=None, prefix="", is_multilabel=False):
@@ -118,8 +119,8 @@ def evaluate_split(model, loader, device, split_name="Test"):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate POCD-KansformerEPI v6")
-    parser.add_argument('--config', default='configs/config.yaml', help='Path to config file')
+    parser = argparse.ArgumentParser(description="Evaluate the baseline POCD-KansformerEPI model")
+    parser.add_argument('--config', default='configs/baseline.yaml', help='Path to config file')
     parser.add_argument('--checkpoint', default=None, help='Path to model checkpoint (default: best)')
     parser.add_argument('--test-cells', nargs='+', required=True,
                         help='Cell lines to evaluate on (e.g. HMEC NHEK)')
@@ -140,7 +141,7 @@ def main():
     encoder_path = os.path.join(save_dir, 'encoder.pkl')
     if not os.path.exists(encoder_path):
         print(f"ERROR: Encoder not found at {encoder_path}")
-        print("Run train.py first to fit and save the encoder.")
+        print("Run scripts/train_baseline.py first to fit and save the encoder.")
         return
     with open(encoder_path, 'rb') as f:
         encoder = pickle.load(f)

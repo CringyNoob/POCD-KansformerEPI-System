@@ -242,7 +242,7 @@ pip install matplotlib seaborn
 ### Memory Optimization for 5070 Ti
 
 ```python
-# In train.py or config.yaml
+# In scripts/train_baseline.py or baseline.yaml
 config = {
     'data': {
         'batch_size': 64,  # Safe for 16GB VRAM
@@ -470,7 +470,7 @@ python scripts/process_bigwig.py --cell HepG2
 
 ```bash
 # Example: Train on 6 cell lines, test on 4
-python train.py \
+python scripts/train_baseline.py \
     --train-cells GM12878 HeLa K562 IMR90 HUVEC NHLF \
     --test-cells HMEC NHEK H1 HepG2 \
     --epochs 100 \
@@ -482,10 +482,10 @@ python train.py \
 
 ## Configuration Updates
 
-### Updated `configs/config.yaml` (10 cell lines)
+### Updated `configs/baseline.yaml` (10 cell lines)
 
 ```yaml
-experiment_name: "POCD_Kansformer_v7_10cells"
+experiment_name: "baseline_10cells"
 
 paths:
   save_dir: "./output_10cells"

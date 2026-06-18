@@ -31,9 +31,9 @@ POCD-KansformerEPI/
 ├── src/
 │   └── samn_model.py          ← Self-contained SAMN + EPI model (NEW)
 ├── configs/
-│   └── config_samn.yaml       ← SAMN configuration (NEW)
-├── train_samn.py              ← Training script (NEW)
-├── evaluate_samn.py           ← Evaluation script (NEW)
+│   └── samn.yaml       ← SAMN configuration (NEW)
+├── scripts/train_samn.py              ← Training script (NEW)
+├── scripts/evaluate_samn.py           ← Evaluation script (NEW)
 ├── test_samn_smoke.py         ← Smoke test (NEW)
 └── SAMN_GUIDE.md              ← This guide (NEW)
 ```
@@ -95,7 +95,7 @@ Expected output: `=== ALL TESTS PASSED ===`
 
 ### Step 4: Start training (5 epochs)
 ```powershell
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
 ```
 
 This will:
@@ -109,19 +109,19 @@ This will:
 ### Optional: Customize training
 ```powershell
 # More epochs
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 50
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 50
 
 # Custom learning rate
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --lr 0.00005
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --lr 0.00005
 
 # Larger batch size (if VRAM allows)
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --batch-size 128
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --batch-size 128
 
 # Custom output directory
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --output-dir ./output_samn_v2
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --output-dir ./results/samn
 
 # Force CPU (not recommended)
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --device cpu --no-amp
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --device cpu --no-amp
 ```
 
 ---
@@ -147,24 +147,24 @@ Key metrics to watch:
 
 ### Evaluate with best checkpoint
 ```powershell
-python evaluate_samn.py --test-cells HMEC NHEK
+python scripts/evaluate_samn.py --test-cells HMEC NHEK
 ```
 
 ### Evaluate with a specific checkpoint
 ```powershell
-python evaluate_samn.py --test-cells HMEC NHEK --checkpoint output_samn/samn_model_best.pth
+python scripts/evaluate_samn.py --test-cells HMEC NHEK --checkpoint results/samn/samn_model_best.pth
 ```
 
 ### Evaluate on different cell lines
 ```powershell
-python evaluate_samn.py --test-cells GM12878 K562
+python scripts/evaluate_samn.py --test-cells GM12878 K562
 ```
 
 ---
 
 ## 7. Output Files
 
-After training completes, `output_samn/` will contain:
+After training completes, `results/samn/` will contain:
 
 | File | Description |
 |------|-------------|
@@ -184,7 +184,7 @@ After training completes, `output_samn/` will contain:
 The config is set to 5 epochs for the initial run. To increase:
 
 ### Option A: Edit config file
-Open `configs/config_samn.yaml` and change:
+Open `configs/samn.yaml` and change:
 ```yaml
 training:
   epochs: 50    # Changed from 5
@@ -192,7 +192,7 @@ training:
 
 ### Option B: CLI override (no file edit needed)
 ```powershell
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 50
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 50
 ```
 
 ### Option C: Resume from checkpoint
@@ -208,10 +208,10 @@ python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHE
 To do a fair comparison, train the original model with the same cell-line split:
 ```powershell
 # Original KansformerEPI
-python train.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 5
+python scripts/train_baseline.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 5
 
 # SAMN-EPI
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 5
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --epochs 5
 ```
 
 Then compare the test AUROC and AUPR from both runs.
@@ -220,7 +220,7 @@ Then compare the test AUROC and AUPR from both runs.
 
 ## 10. SAMN Hyperparameter Tuning
 
-Key SAMN hyperparameters in `configs/config_samn.yaml` under `model.samn`:
+Key SAMN hyperparameters in `configs/samn.yaml` under `model.samn`:
 
 | Parameter | Default | What it controls |
 |-----------|---------|------------------|
@@ -248,10 +248,10 @@ Key SAMN hyperparameters in `configs/config_samn.yaml` under `model.samn`:
 ### CUDA Out of Memory
 ```powershell
 # Reduce batch size
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --batch-size 32
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --batch-size 32
 
 # Or disable mixed precision (uses more VRAM but sometimes helps stability)
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --no-amp
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK --no-amp
 ```
 
 ### Import Errors
@@ -272,7 +272,7 @@ Check that cell line names match exactly: `GM12878`, `HeLa`, `K562`, `IMR90`, `H
 cd D:\FYDP\POCD-KansformerEPI
 .venv\Scripts\activate
 python test_samn_smoke.py
-python train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
+python scripts/train_samn.py --train-cells GM12878 HeLa K562 IMR90 --test-cells HMEC NHEK
 ```
 
 That's it! 🚀

@@ -22,9 +22,6 @@ ENV/
 # Datasets and Preprocessed Data
 data/
 processed/
-processed.zip
-kansformer.zip
-pocd_kansformer_v4.tar.gz
 *.pt
 *.tsv
 *.tsv.gz
@@ -37,6 +34,7 @@ pocd_kansformer_v4.tar.gz
 *.chrom.sizes
 
 # Model Checkpoints and Outputs
+# (results/<stage>/ keeps tracked .npz + config_snapshot.yaml; the binaries below stay ignored)
 checkpoints/
 report_figures/
 *.png
@@ -49,8 +47,6 @@ training_log*.txt
 training_report.docx
 paper_text.txt
 *.pdf
-V6_PERFORMANCE_ANALYSIS.md
-VERTEX_AI_V6_GUIDE.md
 TRAINING_REPORT.md
 
 # Archives

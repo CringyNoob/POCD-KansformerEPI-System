@@ -1,10 +1,15 @@
 """Quick smoke test for SAMN-EPI model."""
+import sys
+from pathlib import Path
 import torch
 import yaml
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
 from src.samn_model import SAMNKansformerEPI
 
-with open("configs/config_samn.yaml") as f:
+with open(ROOT / "configs" / "samn.yaml") as f:
     config = yaml.safe_load(f)
 
 print("Creating SAMN-EPI model...")
